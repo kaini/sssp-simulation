@@ -1,0 +1,24 @@
+cmake_minimum_required (VERSION 3.5.1)
+project (sssp-simulation)
+
+set (CMAKE_CXX_STANDARD 17)
+# TODO With cmake 3.10+ this if can be removed.
+if (MSVC)
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif ()
+
+find_package (Boost REQUIRED)
+
+find_path (Cairo_INCLUDE_DIRS cairo.h)
+find_library (Cairo_LIBRARIES cairo)
+
+find_path (Cairomm_INCLUDE_DIR_1 cairomm/cairomm.h)
+find_path (Cairomm_INCLUDE_DIR_2 cairommconfig.h)
+set (Cairomm_INCLUDE_DIRS "${Cairomm_INCLUDE_DIR_1}" "${Cairomm_INCLUDE_DIR_2}")
+find_library (Cairomm_LIBRARIES cairomm-1.0 NAMES cairomm-1 cairomm)
+
+set (SOURCES dijkstra.cpp generate_edges.cpp graph.cpp main.cpp math.cpp)
+add_executable (sssp-simulation ${SOURCES})
+target_compile_definitions (sssp-simulation PRIVATE -D_USE_MATH_DEFINES)
+target_include_directories (sssp-simulation PRIVATE ${Boost_INCLUDE_DIRS} ${Cairo_INCLUDE_DIRS} ${Cairomm_INCLUDE_DIRS})
+target_link_libraries (sssp-simulation PRIVATE ${Boost_LIBRARIES} ${Cairo_LIBRARIES} ${Cairomm_LIBRARIES})
