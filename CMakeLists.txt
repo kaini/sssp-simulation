@@ -7,7 +7,11 @@ if (MSVC)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
 endif ()
 
-find_package (Boost REQUIRED)
+find_package (Boost REQUIRED program_options)
+# TODO This is a workaround for a bug in Boost with MSVC C++17 compliance.
+if (MSVC)
+	add_definitions (-D_HAS_AUTO_PTR_ETC)
+endif ()
 
 find_path (Cairo_INCLUDE_DIRS cairo.h)
 find_library (Cairo_LIBRARIES cairo)
