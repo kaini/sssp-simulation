@@ -61,9 +61,7 @@ sssp::node_map<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t 
 					destination_node.queue_handle = queue.push(&destination_node);
 				} else {
 					BOOST_ASSERT(destination_node.state == node_state::queued);
-					// Note: Boost's heaps are max-heaps and we compare using operator>.
-					// Therefore if an element is decreased in value it is increased in the heap.
-					queue.increase(destination_node.queue_handle);
+					queue.update(destination_node.queue_handle);
 				}
 			}
 		}
