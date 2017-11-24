@@ -1,10 +1,12 @@
 #include "math.hpp"
+#include <boost/qvm/all.hpp>
 #include <cmath>
+#include <cfloat>
 
 double sssp::distance(const vec2& a, const vec2& b) {
 	double dx = a.x - b.x;
 	double dy = a.y - b.y;
-	return sqrt(dx * dx + dy * dy);
+	return std::sqrt(dx * dx + dy * dy);
 }
 
 bool sssp::intersects(const line& a, const line& b) {
@@ -26,7 +28,7 @@ bool sssp::intersects(const line& a, const line& b) {
 
 	// Equate the two equations to find delta.
 	double quot = s1*t2 - s2*t1;
-	if (quot == 0) {
+	if (std::abs(quot) < DBL_EPSILON) {
 		// The lines are parallel.
 		return false;
 	}

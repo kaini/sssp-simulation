@@ -35,3 +35,14 @@ std::vector<sssp::edge_info> sssp::graph::incoming_edges(size_t destination) con
 	}
 	return result;
 }
+
+std::vector<sssp::edge_info> sssp::graph::edges() const
+{
+	std::vector<edge_info> result;
+	for (size_t source = 0; source < m_nodes.size(); ++source) {
+		for (const edge& edge : m_nodes[source].outgoing) {
+			result.emplace_back(edge_info{source, edge.node, edge.cost});
+		}
+	}
+	return result;
+}

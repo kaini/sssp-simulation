@@ -30,6 +30,8 @@ public:
 	std::vector<edge_info> outgoing_edges(size_t source) const;
 	// Returns all incoming edges of a node.
 	std::vector<edge_info> incoming_edges(size_t destination) const;
+	// Returns all edges.
+	std::vector<edge_info> edges() const;
 
 private:
 	struct edge {

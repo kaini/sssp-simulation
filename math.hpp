@@ -2,9 +2,15 @@
 
 namespace sssp {
 
+struct rgb {
+	double r = 0.0;
+	double g = 0.0;
+	double b = 0.0;
+};
+
 struct vec2 {
-	double x;
-	double y;
+	double x = 0.0;
+	double y = 0.0;
 };
 
 inline bool operator==(const vec2& a, const vec2& b) {

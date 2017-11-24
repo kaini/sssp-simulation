@@ -36,7 +36,7 @@ bool compare_distance::operator()(const node_info* a, const node_info* b) const 
 
 }
 
-void sssp::dijkstra(const graph& graph, size_t start_node) {
+std::vector<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t start_node) {
 	std::vector<node_info> info;
 	info.reserve(graph.node_count());
 	for (size_t i = 0; i < graph.node_count(); ++i) {
@@ -71,4 +71,11 @@ void sssp::dijkstra(const graph& graph, size_t start_node) {
 			}
 		}
 	}
+
+	std::vector<dijkstra_result> result(graph.node_count());
+	for (size_t i = 0; i < graph.node_count(); ++i) {
+		result[i].predecessor = info[i].predecessor;
+		result[i].distance = info[i].distance;
+	}
+	return result;
 }
