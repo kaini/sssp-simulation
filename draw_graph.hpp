@@ -1,15 +1,13 @@
 #pragma once
 #include "graph.hpp"
 #include "math.hpp"
-#include <map>
-#include <tuple>
 #include <cairomm/cairomm.h>
 
 namespace sssp {
 
 struct node_style {
-	rgb color = {1.0, 1.0, 1.0};
-	vec2 position = {0.5, 0.5};
+	rgb color = rgb(1.0, 1.0, 1.0);
+	vec2 position = vec2(0.5, 0.5);
 };
 
 struct edge_style {
@@ -22,8 +20,8 @@ struct edge_style {
 void draw_graph(
 	const Cairo::RefPtr<Cairo::Context>& cr,
 	const graph& graph,
-	const std::vector<node_style>& node_styles,
-	const std::map<std::tuple<size_t, size_t>, edge_style>& edge_styles
+	const node_map<node_style>& node_styles,
+	const edge_map<edge_style>& edge_styles
 );
 
 }

@@ -36,13 +36,10 @@ bool compare_distance::operator()(const node_info* a, const node_info* b) const 
 
 }
 
-std::vector<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t start_node) {
-	std::vector<node_info> info;
-	info.reserve(graph.node_count());
-	for (size_t i = 0; i < graph.node_count(); ++i) {
-		info.emplace_back(node_info(i));
-	}
-
+sssp::node_map<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t start_node) {
+	node_map<node_info> info = graph.make_node_map([](size_t i) {
+		return node_info(i);
+	});
 	node_queue queue;
 
 	info[start_node].state = node_state::queued;
@@ -72,10 +69,10 @@ std::vector<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t sta
 		}
 	}
 
-	std::vector<dijkstra_result> result(graph.node_count());
-	for (size_t i = 0; i < graph.node_count(); ++i) {
-		result[i].predecessor = info[i].predecessor;
-		result[i].distance = info[i].distance;
-	}
-	return result;
+	return graph.make_node_map([&](size_t i) {
+		dijkstra_result result;
+		result.predecessor = info[i].predecessor;
+		result.distance = info[i].distance;
+		return result;
+	});
 }

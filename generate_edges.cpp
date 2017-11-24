@@ -1,7 +1,7 @@
 #include "generate_edges.hpp"
 #include <random>
 
-void sssp::generate_planar_edges(graph& graph, const std::vector<vec2>& positions, int seed, double max_edge_length, double edge_probability) {
+void sssp::generate_planar_edges(graph& graph, const node_map<vec2>& positions, int seed, double max_edge_length, double edge_probability) {
 	std::mt19937 rng(seed);
 	std::bernoulli_distribution allow_edge(edge_probability);
 
@@ -12,7 +12,7 @@ void sssp::generate_planar_edges(graph& graph, const std::vector<vec2>& position
 			if (destination != source &&
 					distance(positions[source], positions[destination]) <= max_edge_length &&
 					allow_edge(rng)) {
-				line this_line = line{positions[source], positions[destination]};
+				line this_line(positions[source], positions[destination]);
 
 				bool does_intersect = false;
 				for (const line& line : lines) {

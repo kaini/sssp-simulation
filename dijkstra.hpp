@@ -9,6 +9,6 @@ struct dijkstra_result {
 	double distance;
 };
 
-std::vector<dijkstra_result> dijkstra(const graph& graph, size_t start_node);
+node_map<dijkstra_result> dijkstra(const graph& graph, size_t start_node);
 
 }

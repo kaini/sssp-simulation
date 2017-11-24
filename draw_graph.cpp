@@ -38,16 +38,18 @@ static void draw_edge(
 void sssp::draw_graph(
 	const Cairo::RefPtr<Cairo::Context>& cr,
 	const graph& graph,
-	const std::vector<node_style>& node_styles,
-	const std::map<std::tuple<size_t, size_t>, edge_style>& edge_styles
+	const node_map<node_style>& node_styles,
+	const edge_map<edge_style>& edge_styles
 ) {
 	for (bool foreground : {false, true}) {
-		for (const sssp::edge_info& edge : graph.edges()) {
-			const node_style& source_style = node_styles[edge.source];
-			const node_style& destination_style = node_styles[edge.destination];
-			const edge_style& edge_style = edge_styles.at({edge.source, edge.destination});
-			if (edge_style.foreground == foreground) {
-				draw_edge(cr, source_style, destination_style, edge_style);
+		for (size_t node = 0; node < graph.node_count(); ++node) {
+			for (const sssp::edge_info& edge : graph.outgoing_edges(node)) {
+				const node_style& source_style = node_styles[edge.source];
+				const node_style& destination_style = node_styles[edge.destination];
+				const edge_style& edge_style = edge_styles.at({edge.source, edge.destination});
+				if (edge_style.foreground == foreground) {
+					draw_edge(cr, source_style, destination_style, edge_style);
+				}
 			}
 		}
 	}

@@ -5,6 +5,6 @@
 
 namespace sssp {
 
-void generate_planar_edges(graph& graph, const std::vector<vec2>& positions, int seed, double max_edge_length, double edge_probability);
+void generate_planar_edges(graph& graph, const node_map<vec2>& positions, int seed, double max_edge_length, double edge_probability);
 
 }
