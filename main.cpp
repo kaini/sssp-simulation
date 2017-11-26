@@ -14,18 +14,21 @@ int main(int argc, char* argv[]) {
 	
 	arguments args = parse_arguments(argc, argv);
 
-	std::mt19937 rng(args.seed);
+	std::mt19937_64 rng(args.seed);
 	std::uniform_int_distribution<int> uniform_seed(INT_MIN, INT_MAX);
+	int position_seed = uniform_seed(rng);
+	int cost_seed = uniform_seed(rng);
+	int edge_seed = uniform_seed(rng);
 
 	node_map<vec2> positions;
 	if (args.position_gen.algorithm.value() == position_poisson) {
 		positions = generate_poisson_disc_positions(
-			uniform_seed(rng),
+			position_seed,
 			args.position_gen.poisson.min_distance,
 			args.position_gen.poisson.max_reject);
 	} else if (args.position_gen.algorithm.value() == position_uniform) {
 		positions = generate_uniform_positions(
-			uniform_seed(rng),
+			position_seed,
 			args.position_gen.uniform.count);
 	} else {
 		assert(false);
@@ -37,21 +40,37 @@ int main(int argc, char* argv[]) {
 		graph.add_node();
 	}
 
-	auto cost_fn = [](auto&) { return 1.0; };  // TODO
+	edge_cost_fn edge_cost_fn;
+	if (args.cost_gen.algorithm.value() == cost_uniform) {
+		edge_cost_fn = [rng=std::mt19937(cost_seed)](const line& line) mutable {
+			return std::uniform_real_distribution<double>(0.0, 1.0)(rng);
+		};
+	} else if (args.cost_gen.algorithm.value() == cost_one) {
+		edge_cost_fn = [](const line& line) {
+			return 1.0;
+		};
+	} else if (args.cost_gen.algorithm.value() == cost_euclidean) {
+		edge_cost_fn = [](const line& line) {
+			return distance(line.start, line.end);
+		};
+	} else {
+		assert(false);
+		return 1;
+	}
 
 	if (args.edge_gen.algorithm.value() == edge_planar) {
 		generate_planar_edges(
-			uniform_seed(rng),
+			edge_seed,
 			args.edge_gen.planar.max_length,
 			args.edge_gen.planar.probability,
-			cost_fn,
+			edge_cost_fn,
 			graph,
 			positions);
 	} else if (args.edge_gen.algorithm.value() == edge_uniform) {
 		generate_uniform_edges(
-			uniform_seed(rng),
+			edge_seed,
 			args.edge_gen.uniform.probability,
-			cost_fn,
+			edge_cost_fn,
 			graph,
 			positions);
 	} else {

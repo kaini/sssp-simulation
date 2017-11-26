@@ -69,6 +69,17 @@ inline std::string default_edge_algorithm() {
 }
 using edge_algorithm = validated<std::string, is_edge_algorithm, default_edge_algorithm>;
 
+const std::string cost_uniform = "uniform";
+const std::string cost_one = "one";
+const std::string cost_euclidean = "euclidean";
+inline bool is_cost_algorithm(const std::string& s) {
+	return s == cost_uniform || s == cost_one || s == cost_euclidean;
+}
+inline std::string default_cost_algorithm() {
+	return cost_uniform;
+}
+using cost_algorithm = validated<std::string, is_cost_algorithm, default_cost_algorithm>;
+
 struct arguments {
 	struct position_gen {
 		position_algorithm algorithm = position_poisson;
@@ -91,6 +102,10 @@ struct arguments {
 			from_zero_to_one_double probability = 0.05;
 		} uniform;
 	} edge_gen;
+
+	struct cost_gen {
+		cost_algorithm algorithm = cost_uniform;
+	} cost_gen;
 
 	int seed = 42;
 };

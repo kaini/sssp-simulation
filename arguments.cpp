@@ -31,6 +31,12 @@ sssp::arguments sssp::parse_arguments(int argc, char* argv[]) {
 			"Set the probability for each edge to be added. (>= 0; <= 1)")
 		;
 
+	po::options_description cost_opts("Edge costs");
+	cost_opts.add_options()
+		("cost-gen,C", po::value(&args.cost_gen.algorithm)->default_value(args.cost_gen.algorithm),
+			"Set the generator used to generate edge costs. Possible values:\n - uniform: \tthe edge costs are uniformly random between 0 and 1\n - one: \tall edges have cost 1\n - euclidean: \tall edges have their euclidean length as cost")
+		;
+
 	po::options_description all_opts("Single Source Shortest Path simulation tool. Global options");
 	all_opts.add_options()
 		("help,h", "Show this help message.")
@@ -38,6 +44,7 @@ sssp::arguments sssp::parse_arguments(int argc, char* argv[]) {
 	;
 	all_opts.add(pos_opts);
 	all_opts.add(edge_opts);
+	all_opts.add(cost_opts);
 
 	po::variables_map vm;
 	try {
