@@ -5,6 +5,7 @@
 #include "generate_positions.hpp"
 #include "graph.hpp"
 #include "math.hpp"
+#include <boost/assert.hpp>
 #include <cairomm/cairomm.h>
 #include <iostream>
 #include <random>
@@ -27,7 +28,7 @@ int main(int argc, char* argv[]) {
     } else if (args.position_gen.algorithm.value() == position_uniform) {
         positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
     } else {
-        assert(false);
+        BOOST_ASSERT(false);
         return 1;
     }
 
@@ -46,7 +47,7 @@ int main(int argc, char* argv[]) {
     } else if (args.cost_gen.algorithm.value() == cost_euclidean) {
         edge_cost_fn = [](const line& line) { return distance(line.start, line.end); };
     } else {
-        assert(false);
+        BOOST_ASSERT(false);
         return 1;
     }
 
@@ -60,7 +61,7 @@ int main(int argc, char* argv[]) {
     } else if (args.edge_gen.algorithm.value() == edge_uniform) {
         generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);
     } else {
-        assert(false);
+        BOOST_ASSERT(false);
         return 1;
     }
 
