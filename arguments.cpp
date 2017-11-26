@@ -26,9 +26,9 @@ sssp::arguments sssp::parse_arguments(int argc, char* argv[]) {
 		("Eplanar-max-length", po::value(&args.edge_gen.planar.max_length)->default_value(args.edge_gen.planar.max_length),
 			"Set the maximum distance of nodes considered when looking for possible edges to add. (> 0)")
 		("Eplanar-probability", po::value(&args.edge_gen.planar.probability)->default_value(args.edge_gen.planar.probability),
-			"Sets the probability that a valid edge is added. (>= 0; <= 1)")
+			"Set the probability that a valid edge is added. (>= 0; <= 1)")
 		("Euniform-probability", po::value(&args.edge_gen.uniform.probability)->default_value(args.edge_gen.uniform.probability),
-			"Sets the probability for each edge to be added. (>= 0; <= 1)")
+			"Set the probability for each edge to be added. (>= 0; <= 1)")
 		;
 
 	po::options_description all_opts("Single Source Shortest Path simulation tool. Global options");
