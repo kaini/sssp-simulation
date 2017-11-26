@@ -32,11 +32,11 @@ void sssp::draw_graph(const Cairo::RefPtr<Cairo::Context>& cr,
                       const edge_map<edge_style>& edge_styles) {
     for (bool foreground : {false, true}) {
         for (size_t node = 0; node < graph.node_count(); ++node) {
-            for (const sssp::edge_info& edge : graph.outgoing_edges(node)) {
-                const node_style& source_style = node_styles[edge.source];
-                const node_style& destination_style = node_styles[edge.destination];
+            for (const edge_info& edge : graph.outgoing_edges(node)) {
                 const edge_style& edge_style = edge_styles.at({edge.source, edge.destination});
                 if (edge_style.foreground == foreground) {
+                    const node_style& source_style = node_styles[edge.source];
+                    const node_style& destination_style = node_styles[edge.destination];
                     draw_edge(cr, source_style, destination_style, edge_style);
                 }
             }
@@ -52,6 +52,30 @@ void sssp::draw_graph(const Cairo::RefPtr<Cairo::Context>& cr,
         cr->fill_preserve();
         cr->set_source_rgb(0.0, 0.0, 0.0);
         cr->stroke();
+    }
+    cr->restore();
+
+    cr->save();
+    cr->set_source_rgb(0.0, 0.0, 0.0);
+    cr->set_font_size(0.0175);
+    for (size_t node = 0; node < graph.node_count(); ++node) {
+        for (const edge_info& edge : graph.outgoing_edges(node)) {
+            const edge_style& edge_style = edge_styles.at({edge.source, edge.destination});
+            const node_style& source_style = node_styles[edge.source];
+            const node_style& destination_style = node_styles[edge.destination];
+            std::string text = std::to_string(int(std::round(edge.cost * 1000))) + ">";
+            Cairo::TextExtents te;
+            cr->get_text_extents(text, te);
+            double angle = std::atan2(destination_style.position.y - source_style.position.y,
+                                      destination_style.position.x - source_style.position.x);
+            cr->save();
+            cr->translate(source_style.position.x * 0.5 + destination_style.position.x * 0.5,
+                          source_style.position.y * 0.5 + destination_style.position.y * 0.5);
+            cr->rotate(angle);
+            cr->move_to(-te.width / 2.0, -0.004);
+            cr->show_text(text);
+            cr->restore();
+        }
     }
     cr->restore();
 }

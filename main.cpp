@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
         node_style style;
         style.position = positions[i];
         if (i == start_node) {
-            style.color = rgb(0.0, 0.0, 0.0);
+            style.color = rgb(0.25, 0.25, 1.0);
         } else if (result[i].predecessor == -1) {
             style.color = rgb(1.0, 0.5, 0.5);
         }
@@ -83,22 +83,23 @@ int main(int argc, char* argv[]) {
         edge_style style;
         if (result[destination].predecessor == source) {
             style.line_width *= 2;
-            style.color = sssp::rgb(0.0, 0.0, 0.75);
+            style.color = sssp::rgb(0.25, 0.25, 1.0);
             style.foreground = true;
         }
         return style;
     });
 
-    auto surface = Cairo::ImageSurface::create(Cairo::FORMAT_RGB24, 800, 800);
+    int width = 800;
+    int height = 800;
+    auto surface = Cairo::PdfSurface::create("image.pdf", width, height);
     auto cr = Cairo::Context::create(surface);
-    cr->translate(50, 50);
-    cr->scale(surface->get_width() - 100, surface->get_height() - 100);
+    cr->translate(25, 25);
+    cr->scale(width - 50, height - 50);
     cr->save();
     cr->set_source_rgb(1.0, 1.0, 1.0);
     cr->paint();
     cr->restore();
     draw_graph(cr, graph, node_styles, edge_styles);
-    surface->write_to_png("image.png");
 
     return 0;
 }
