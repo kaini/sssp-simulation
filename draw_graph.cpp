@@ -45,13 +45,22 @@ void sssp::draw_graph(const Cairo::RefPtr<Cairo::Context>& cr,
 
     cr->save();
     cr->set_line_width(0.002);
+    cr->set_font_size(0.015);
     for (size_t i = 0; i < graph.node_count(); ++i) {
         const node_style& node_style = node_styles[i];
+
         cr->arc(node_style.position.x, node_style.position.y, 0.015, 0.0, 2.0 * M_PI);
         cr->set_source_rgb(node_style.color.r, node_style.color.g, node_style.color.b);
         cr->fill_preserve();
         cr->set_source_rgb(0.0, 0.0, 0.0);
         cr->stroke();
+
+        Cairo::TextExtents te;
+        cr->get_text_extents(node_style.text, te);
+        cr->move_to(node_style.position.x - te.width / 2.0 - te.x_bearing,
+                    node_style.position.y - te.height / 2.0 - te.y_bearing);
+        cr->show_text(node_style.text);
+        cr->begin_new_path();
     }
     cr->restore();
 
@@ -72,8 +81,9 @@ void sssp::draw_graph(const Cairo::RefPtr<Cairo::Context>& cr,
             cr->translate(source_style.position.x * 0.5 + destination_style.position.x * 0.5,
                           source_style.position.y * 0.5 + destination_style.position.y * 0.5);
             cr->rotate(angle);
-            cr->move_to(-te.width / 2.0, -0.004);
+            cr->move_to(-te.width / 2.0 - te.x_bearing, -0.004);
             cr->show_text(text);
+            cr->begin_new_path();
             cr->restore();
         }
     }

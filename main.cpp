@@ -68,13 +68,21 @@ int main(int argc, char* argv[]) {
     size_t start_node = 0;
     node_map<dijkstra_result> result = sssp::dijkstra(graph, start_node);
 
+    int max_relaxation_phase =
+        std::max_element(result.begin(),
+                         result.end(),
+                         [](const auto& a, const auto& b) { return a.relaxation_phase < b.relaxation_phase; })
+            ->relaxation_phase;
+
     node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
         node_style style;
         style.position = positions[i];
-        if (i == start_node) {
-            style.color = rgb(0.25, 0.25, 1.0);
-        } else if (result[i].predecessor == -1) {
+        if (result[i].relaxation_phase == -1) {
             style.color = rgb(1.0, 0.5, 0.5);
+        } else {
+            double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_relaxation_phase;
+            style.color = rgb(c, c, 1.0);
+            style.text = std::to_string(result[i].relaxation_phase);
         }
         return style;
     });

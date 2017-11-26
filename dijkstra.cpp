@@ -26,6 +26,7 @@ struct node_info {
     size_t index;
     node_state state = node_state::unreached;
     size_t predecessor = -1;
+    int relaxation_phase = -1;
     double distance = INFINITY;
     node_queue::handle_type queue_handle;
 };
@@ -44,10 +45,12 @@ sssp::node_map<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t 
     info[start_node].distance = 0.0;
     info[start_node].queue_handle = queue.push(&info[start_node]);
 
+    int current_phase = 0;
     while (!queue.empty()) {
         node_info& current_node = *queue.top();
         queue.pop();
         current_node.state = node_state::relaxed;
+        current_node.relaxation_phase = current_phase;
 
         for (const edge_info& edge : graph.outgoing_edges(current_node.index)) {
             node_info& destination_node = info[edge.destination];
@@ -64,12 +67,15 @@ sssp::node_map<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t 
                 }
             }
         }
+
+        ++current_phase;
     }
 
     return graph.make_node_map([&](size_t i) {
         dijkstra_result result;
         result.predecessor = info[i].predecessor;
         result.distance = info[i].distance;
+        result.relaxation_phase = info[i].relaxation_phase;
         return result;
     });
 }

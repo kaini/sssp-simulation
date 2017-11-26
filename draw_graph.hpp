@@ -8,6 +8,7 @@ namespace sssp {
 struct node_style {
     rgb color = rgb(1.0, 1.0, 1.0);
     vec2 position = vec2(0.5, 0.5);
+    std::string text = "";
 };
 
 struct edge_style {
