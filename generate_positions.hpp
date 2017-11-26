@@ -13,5 +13,4 @@ std::vector<vec2> generate_uniform_positions(int seed, size_t count);
 // Robert Bridson's Fast Poisson Disk Sampling algorithm (2007).
 std::vector<vec2> generate_poisson_disc_positions(int seed, double min_distance, int rejection_limit);
 
-}
-
+} // namespace sssp
