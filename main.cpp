@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
 			args.position_gen.uniform.count);
 	} else {
 		assert(false);
+		return 1;
 	}
 
 	graph graph;
@@ -36,7 +37,27 @@ int main(int argc, char* argv[]) {
 		graph.add_node();
 	}
 
-	generate_planar_edges(graph, positions, 1234, 0.20, 0.5);
+	auto cost_fn = [](auto&) { return 1.0; };  // TODO
+
+	if (args.edge_gen.algorithm.value() == edge_planar) {
+		generate_planar_edges(
+			uniform_seed(rng),
+			args.edge_gen.planar.max_length,
+			args.edge_gen.planar.probability,
+			cost_fn,
+			graph,
+			positions);
+	} else if (args.edge_gen.algorithm.value() == edge_uniform) {
+		generate_uniform_edges(
+			uniform_seed(rng),
+			args.edge_gen.uniform.probability,
+			cost_fn,
+			graph,
+			positions);
+	} else {
+		assert(false);
+		return 1;
+	}
 
 	size_t start_node = 0;
 	node_map<dijkstra_result> result = sssp::dijkstra(graph, start_node);

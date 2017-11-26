@@ -1,5 +1,4 @@
 #include "math.hpp"
-#include <boost/qvm/all.hpp>
 #include <cmath>
 #include <cfloat>
 

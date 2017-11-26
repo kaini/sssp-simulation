@@ -1,5 +1,6 @@
 #pragma once
 #include "math.hpp"
+#include <cstdlib>
 #include <vector>
 
 namespace sssp {

@@ -1,7 +1,7 @@
 #include "generate_edges.hpp"
 #include <random>
 
-void sssp::generate_planar_edges(graph& graph, const node_map<vec2>& positions, int seed, double max_edge_length, double edge_probability) {
+void sssp::generate_planar_edges(int seed, double max_edge_length, double edge_probability, edge_cost_fn edge_cost, graph& graph, const node_map<vec2>& positions) {
 	std::mt19937 rng(seed);
 	std::bernoulli_distribution allow_edge(edge_probability);
 
@@ -25,9 +25,22 @@ void sssp::generate_planar_edges(graph& graph, const node_map<vec2>& positions, 
 				}
 				
 				if (!does_intersect) {
-					graph.add_edge(source, destination, 1.0);  // TODO edge cost
+					graph.add_edge(source, destination, edge_cost(this_line));
 					lines.emplace_back(this_line);
 				}
+			}
+		}
+	}
+}
+
+void sssp::generate_uniform_edges(int seed, double edge_probability, edge_cost_fn edge_cost, graph& graph, const node_map<vec2>& positions) {
+	std::mt19937 rng(seed);
+	std::bernoulli_distribution allow_edge(edge_probability);
+
+	for (size_t source = 0; source < graph.node_count(); ++source) {
+		for (size_t destination = 0; destination < graph.node_count(); ++destination) {
+			if (destination != source && allow_edge(rng)) {
+				graph.add_edge(source, destination, edge_cost(line(positions[source], positions[destination])));
 			}
 		}
 	}
