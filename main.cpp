@@ -67,6 +67,8 @@ int main(int argc, char* argv[]) {
 		style.position = positions[i];
 		if (i == start_node) {
 			style.color = rgb(0.0, 0.0, 0.0);
+		} else if (result[i].predecessor == -1) {
+			style.color = rgb(1.0, 0.5, 0.5);
 		}
 		return style;
 	});
