@@ -58,5 +58,6 @@ target_link_libraries (sssp-simulation sssp)
 ##################
 set (TESTS_SOURCES tests/crauser_test.cpp tests/dijkstra_test.cpp tests/graph_test.cpp tests/math_test.cpp tests/test.cpp)
 add_executable (tests ${TESTS_SOURCES})
+target_compile_definitions (tests PUBLIC -DBOOST_TEST_DYN_LINK)
 target_link_libraries (tests sssp)
 add_test (sssp-tests tests)

@@ -1,5 +1,6 @@
 #include "math.hpp"
 #include <boost/test/unit_test.hpp>
+#include <cfloat>
 
 using namespace sssp;
 namespace tt = boost::test_tools;

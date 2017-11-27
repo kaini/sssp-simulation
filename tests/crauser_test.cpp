@@ -3,6 +3,7 @@
 #include "graph.hpp"
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
+#include <cfloat>
 
 using namespace sssp;
 namespace data = boost::unit_test::data;
