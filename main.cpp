@@ -1,4 +1,5 @@
 #include "arguments.hpp"
+#include "crauser.hpp"
 #include "dijkstra.hpp"
 #include "draw_graph.hpp"
 #include "generate_edges.hpp"
@@ -22,14 +23,17 @@ int main(int argc, char* argv[]) {
     int edge_seed = uniform_seed(rng);
 
     node_map<vec2> positions;
-    if (args.position_gen.algorithm.value() == position_poisson) {
-        positions = generate_poisson_disc_positions(
-            position_seed, args.position_gen.poisson.min_distance, args.position_gen.poisson.max_reject);
-    } else if (args.position_gen.algorithm.value() == position_uniform) {
-        positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
-    } else {
-        BOOST_ASSERT(false);
-        return 1;
+    switch (args.position_gen.algorithm) {
+        case position_algorithm::poisson:
+            positions = generate_poisson_disc_positions(
+                position_seed, args.position_gen.poisson.min_distance, args.position_gen.poisson.max_reject);
+            break;
+        case position_algorithm::uniform:
+            positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
+            break;
+        default:
+            BOOST_ASSERT(false);
+            return 1;
     }
 
     graph graph;
@@ -38,35 +42,59 @@ int main(int argc, char* argv[]) {
     }
 
     edge_cost_fn edge_cost_fn;
-    if (args.cost_gen.algorithm.value() == cost_uniform) {
-        edge_cost_fn = [rng = std::mt19937(cost_seed)](const line& line) mutable {
-            return std::uniform_real_distribution<double>(0.0, 1.0)(rng);
-        };
-    } else if (args.cost_gen.algorithm.value() == cost_one) {
-        edge_cost_fn = [](const line& line) { return 1.0; };
-    } else if (args.cost_gen.algorithm.value() == cost_euclidean) {
-        edge_cost_fn = [](const line& line) { return distance(line.start, line.end); };
-    } else {
-        BOOST_ASSERT(false);
-        return 1;
+    switch (args.cost_gen.algorithm) {
+        case cost_algorithm::uniform:
+            edge_cost_fn = [rng = std::mt19937(cost_seed)](const line& line) mutable {
+                return std::uniform_real_distribution<double>(0.0, 1.0)(rng);
+            };
+            break;
+        case cost_algorithm::one:
+            edge_cost_fn = [](const line& line) { return 1.0; };
+            break;
+        case cost_algorithm::euclidean:
+            edge_cost_fn = [](const line& line) { return distance(line.start, line.end); };
+            break;
+        default:
+            BOOST_ASSERT(false);
+            return 1;
     }
 
-    if (args.edge_gen.algorithm.value() == edge_planar) {
-        generate_planar_edges(edge_seed,
-                              args.edge_gen.planar.max_length,
-                              args.edge_gen.planar.probability,
-                              edge_cost_fn,
-                              graph,
-                              positions);
-    } else if (args.edge_gen.algorithm.value() == edge_uniform) {
-        generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);
-    } else {
-        BOOST_ASSERT(false);
-        return 1;
+    switch (args.edge_gen.algorithm) {
+        case edge_algorithm::planar:
+            generate_planar_edges(edge_seed,
+                                  args.edge_gen.planar.max_length,
+                                  args.edge_gen.planar.probability,
+                                  edge_cost_fn,
+                                  graph,
+                                  positions);
+            break;
+        case edge_algorithm::uniform:
+            generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);
+            break;
+        default:
+            BOOST_ASSERT(false);
+            return 1;
     }
 
     size_t start_node = 0;
-    node_map<dijkstra_result> result = sssp::dijkstra(graph, start_node);
+    node_map<dijkstra_result> result;
+    switch (args.algorithm) {
+        case sssp_algorithm::dijkstra:
+            result = sssp::dijkstra(graph, start_node);
+            break;
+        case sssp_algorithm::crauser_in:
+            result = sssp::crauser(graph, start_node, crauser_criteria::in);
+            break;
+        case sssp_algorithm::crauser_out:
+            result = sssp::crauser(graph, start_node, crauser_criteria::out);
+            break;
+        case sssp_algorithm::crauser_inout:
+            result = sssp::crauser(graph, start_node, crauser_criteria::inout);
+            break;
+        default:
+            BOOST_ASSERT(false);
+            return 1;
+    }
 
     int max_relaxation_phase =
         std::max_element(result.begin(),
@@ -97,17 +125,22 @@ int main(int argc, char* argv[]) {
         return style;
     });
 
-    int width = 800;
-    int height = 800;
-    auto surface = Cairo::PdfSurface::create("image.pdf", width, height);
-    auto cr = Cairo::Context::create(surface);
-    cr->translate(25, 25);
-    cr->scale(width - 50, height - 50);
-    cr->save();
-    cr->set_source_rgb(1.0, 1.0, 1.0);
-    cr->paint();
-    cr->restore();
-    draw_graph(cr, graph, node_styles, edge_styles);
+    try {
+        int width = 800;
+        int height = 800;
+        auto surface = Cairo::PdfSurface::create("image.pdf", width, height);
+        auto cr = Cairo::Context::create(surface);
+        cr->translate(25, 25);
+        cr->scale(width - 50, height - 50);
+        cr->save();
+        cr->set_source_rgb(1.0, 1.0, 1.0);
+        cr->paint();
+        cr->restore();
+        draw_graph(cr, graph, node_styles, edge_styles);
+    } catch (const std::ios_base::failure& ex) {
+        std::cerr << "Could not write file image.pdf: " << ex.what() << "\n";
+        return 1;
+    }
 
     return 0;
 }

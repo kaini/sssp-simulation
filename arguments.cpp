@@ -42,8 +42,9 @@ sssp::arguments sssp::parse_arguments(int argc, char* argv[]) {
     po::options_description all_opts("Single Source Shortest Path simulation tool. Global options");
     all_opts.add_options()
         ("help,h", "Show this help message.")
-        ("seed,s", po::value(&args.seed)->default_value(args.seed), "Set the seed.");
-    ;
+        ("seed,s", po::value(&args.seed)->default_value(args.seed), "Set the seed.")
+        ("algorithm,a", po::value(&args.algorithm)->default_value(args.algorithm), "Set the SSSP algorithm. Possible values:\n  - dijkstra: \tDijkstra's algorithm\n  - crauser_in: \tCrauser et al. using only the IN criteria.\n  - crauser_out: \tCrauser et al. using only the OUT criteria.\n  - crauser_inout: \tCrauser et al. using both the IN and the OUT criteria.")
+        ;
     all_opts.add(pos_opts);
     all_opts.add(edge_opts);
     all_opts.add(cost_opts);

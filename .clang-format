@@ -8,3 +8,4 @@ BinPackArguments: false
 BinPackParameters: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowAllParametersOfDeclarationOnNextLine: false
+IndentCaseLabels: true

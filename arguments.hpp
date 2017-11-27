@@ -1,10 +1,16 @@
 #pragma once
+#include "stringy_enum.hpp"
+#include <boost/assert.hpp>
 #include <cstdint>
-#include <iostream>
 #include <stdexcept>
-#include <string>
+#include <vector>
 
 namespace sssp {
+
+STRINGY_ENUM(position_algorithm, poisson, uniform)
+STRINGY_ENUM(edge_algorithm, planar, uniform)
+STRINGY_ENUM(cost_algorithm, uniform, one, euclidean)
+STRINGY_ENUM(sssp_algorithm, dijkstra, crauser_in, crauser_out, crauser_inout)
 
 template <typename T> using valid_fn = bool (*)(const T&);
 template <typename T> using default_fn = T (*)();
@@ -60,40 +66,9 @@ template <typename T> T return_zero() {
 }
 using from_zero_to_one_double = validated<double, is_from_zero_to_one<double>, return_zero<double>>;
 
-const std::string position_poisson = "poisson";
-const std::string position_uniform = "uniform";
-inline bool is_position_algorithm(const std::string& s) {
-    return s == position_poisson || s == position_uniform;
-}
-inline std::string default_position_algorithm() {
-    return position_poisson;
-}
-using position_algorithm = validated<std::string, is_position_algorithm, default_position_algorithm>;
-
-const std::string edge_planar = "planar";
-const std::string edge_uniform = "uniform";
-inline bool is_edge_algorithm(const std::string& s) {
-    return s == edge_planar || s == edge_uniform;
-}
-inline std::string default_edge_algorithm() {
-    return edge_planar;
-}
-using edge_algorithm = validated<std::string, is_edge_algorithm, default_edge_algorithm>;
-
-const std::string cost_uniform = "uniform";
-const std::string cost_one = "one";
-const std::string cost_euclidean = "euclidean";
-inline bool is_cost_algorithm(const std::string& s) {
-    return s == cost_uniform || s == cost_one || s == cost_euclidean;
-}
-inline std::string default_cost_algorithm() {
-    return cost_uniform;
-}
-using cost_algorithm = validated<std::string, is_cost_algorithm, default_cost_algorithm>;
-
 struct arguments {
     struct position_gen {
-        position_algorithm algorithm = position_poisson;
+        position_algorithm algorithm = position_algorithm::poisson;
         struct poisson {
             positive_double min_distance = 0.1;
             positive_int max_reject = 30;
@@ -104,7 +79,7 @@ struct arguments {
     } position_gen;
 
     struct edge_gen {
-        edge_algorithm algorithm = edge_planar;
+        edge_algorithm algorithm = edge_algorithm::planar;
         struct planar {
             positive_double max_length = 0.2;
             from_zero_to_one_double probability = 0.5;
@@ -115,10 +90,11 @@ struct arguments {
     } edge_gen;
 
     struct cost_gen {
-        cost_algorithm algorithm = cost_uniform;
+        cost_algorithm algorithm = cost_algorithm::uniform;
     } cost_gen;
 
     int seed = 42;
+    sssp_algorithm algorithm = sssp_algorithm::dijkstra;
 };
 
 arguments parse_arguments(int argc, char* argv[]);
