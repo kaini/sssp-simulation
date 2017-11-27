@@ -2,7 +2,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 
-sssp::arguments sssp::parse_arguments(int argc, char* argv[]) {
+boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
     namespace po = boost::program_options;
 
     arguments args;
@@ -57,12 +57,12 @@ sssp::arguments sssp::parse_arguments(int argc, char* argv[]) {
         po::notify(vm);
     } catch (const boost::program_options::error& ex) {
         std::cerr << ex.what() << "\n";
-        exit(1); // TODO remove
+        return {};
     }
 
     if (vm.count("help")) {
         std::cout << all_opts << "\n";
-        exit(1); // TODO remove
+        return {};
     }
 
     return args;

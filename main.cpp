@@ -14,7 +14,11 @@
 int main(int argc, char* argv[]) {
     using namespace sssp;
 
-    arguments args = parse_arguments(argc, argv);
+    boost::optional<arguments> args_opt = parse_arguments(argc, argv);
+    if (!args_opt) {
+        return 1;
+    }
+    arguments args = *args_opt;
 
     std::mt19937_64 rng(args.seed);
     std::uniform_int_distribution<int> uniform_seed(INT_MIN, INT_MAX);

@@ -1,6 +1,7 @@
 #pragma once
 #include "stringy_enum.hpp"
 #include <boost/assert.hpp>
+#include <boost/optional.hpp>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
@@ -97,6 +98,6 @@ struct arguments {
     sssp_algorithm algorithm = sssp_algorithm::dijkstra;
 };
 
-arguments parse_arguments(int argc, char* argv[]);
+boost::optional<arguments> parse_arguments(int argc, char* argv[]);
 
 } // namespace sssp
