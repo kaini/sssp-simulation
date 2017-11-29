@@ -1,4 +1,5 @@
 #include "graph.hpp"
+#include <algorithm>
 #include <boost/assert.hpp>
 
 sssp::graph::graph() {}
