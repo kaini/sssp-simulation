@@ -39,15 +39,25 @@ find_path (Cairomm_INCLUDE_DIR_2 cairommconfig.h HINTS /usr/lib/${C_ARCH}/cairom
 set (Cairomm_INCLUDE_DIRS "${Cairomm_INCLUDE_DIR_1}" "${Cairomm_INCLUDE_DIR_2}")
 find_library (Cairomm_LIBRARIES cairomm-1.0 NAMES cairomm-1 cairomm)
 
+find_path (Tbb_INCLUDE_DIR tbb/parallel_for.h)
+find_library (Tbb_LIBRARIES_Debug tbb_debug)
+find_library (Tbb_LIBRARIES tbb)
+
 # sssp-simulation library
 #########################
-set (HEADERS arguments.hpp crauser.hpp dijkstra.hpp draw_graph.hpp generate_edges.hpp generate_positions.hpp graph.hpp math.hpp stringy_enum.hpp)
+set (HEADERS arguments.hpp crauser.hpp dijkstra.hpp draw_graph.hpp generate_edges.hpp generate_positions.hpp graph.hpp math.hpp partial_shuffle.hpp stringy_enum.hpp)
 set (SOURCES arguments.cpp crauser.cpp dijkstra.cpp draw_graph.cpp generate_edges.cpp generate_positions.cpp graph.cpp math.cpp)
 add_library (sssp STATIC ${HEADERS} ${SOURCES})
 target_compile_definitions (sssp PUBLIC -D_USE_MATH_DEFINES)
-target_include_directories (sssp PUBLIC ${Boost_INCLUDE_DIRS} ${Cairo_INCLUDE_DIRS} ${Freetype_INCLUDE_DIRS} ${Sigcpp_INCLUDE_DIRS} ${Cairomm_INCLUDE_DIRS})
+target_include_directories (sssp PUBLIC ${Boost_INCLUDE_DIRS} ${Cairo_INCLUDE_DIRS} ${Freetype_INCLUDE_DIRS} ${Sigcpp_INCLUDE_DIRS} ${Cairomm_INCLUDE_DIRS} ${Tbb_INCLUDE_DIR})
 target_include_directories (sssp INTERFACE .)
 target_link_libraries (sssp PUBLIC ${Boost_LIBRARIES} ${Cairo_LIBRARIES} ${Cairomm_LIBRARIES})
+if (MSVC)
+	target_link_libraries (sssp PUBLIC optimized ${Tbb_LIBRARIES})
+	target_link_libraries (sssp PUBLIC debug ${Tbb_LIBRARIES_Debug})
+else ()
+	target_link_libraries (sssp PUBLIC ${Tbb_LIBRARIES})
+endif ()
 
 # sssp-simulation executable
 ############################

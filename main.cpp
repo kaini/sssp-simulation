@@ -10,9 +10,13 @@
 #include <boost/date_time.hpp>
 #include <cairomm/cairomm.h>
 #include <iostream>
+#include <mutex>
 #include <random>
+#include <tbb/parallel_for.h>
 
 namespace {
+
+std::mutex output_lock;
 
 struct output_line {
     output_line(int run, int seed, size_t node_count, size_t reachable, int relaxation_phases)
@@ -126,47 +130,52 @@ void run(const sssp::arguments& args, int run_number) {
     size_t reachable_count =
         std::count_if(result.begin(), result.end(), [](const auto& n) { return n.distance < INFINITY; });
 
-    std::cout << arguments_csv_values(args) << ","
-              << output_line(run_number, seed, graph.node_count(), reachable_count, max_relaxation_phase + 1) << "\n";
+    {
+        std::lock_guard<std::mutex> lock(output_lock);
 
-    if (args.image.size() > 0) {
-        node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
-            node_style style;
-            style.position = positions[i];
-            if (result[i].relaxation_phase == -1) {
-                style.color = rgb(1.0, 0.5, 0.5);
-            } else {
-                double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_relaxation_phase;
-                style.color = rgb(c, c, 1.0);
-                style.text = std::to_string(result[i].relaxation_phase);
+        std::cout << arguments_csv_values(args) << ","
+                  << output_line(run_number, seed, graph.node_count(), reachable_count, max_relaxation_phase + 1)
+                  << "\n";
+
+        if (args.image.size() > 0) {
+            node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
+                node_style style;
+                style.position = positions[i];
+                if (result[i].relaxation_phase == -1) {
+                    style.color = rgb(1.0, 0.5, 0.5);
+                } else {
+                    double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_relaxation_phase;
+                    style.color = rgb(c, c, 1.0);
+                    style.text = std::to_string(result[i].relaxation_phase);
+                }
+                return style;
+            });
+
+            edge_map<edge_style> edge_styles = graph.make_edge_map([&](size_t source, size_t destination) {
+                edge_style style;
+                if (result[destination].predecessor == source) {
+                    style.line_width *= 2;
+                    style.color = sssp::rgb(0.25, 0.25, 1.0);
+                    style.foreground = true;
+                }
+                return style;
+            });
+
+            try {
+                int width = 800;
+                int height = 800;
+                auto surface = Cairo::PdfSurface::create(args.image, width, height);
+                auto cr = Cairo::Context::create(surface);
+                cr->translate(25, 25);
+                cr->scale(width - 50, height - 50);
+                cr->save();
+                cr->set_source_rgb(1.0, 1.0, 1.0);
+                cr->paint();
+                cr->restore();
+                draw_graph(cr, graph, node_styles, edge_styles);
+            } catch (const std::ios_base::failure& ex) {
+                std::cerr << "Could not write file " << args.image << ": " << ex.what() << "\n";
             }
-            return style;
-        });
-
-        edge_map<edge_style> edge_styles = graph.make_edge_map([&](size_t source, size_t destination) {
-            edge_style style;
-            if (result[destination].predecessor == source) {
-                style.line_width *= 2;
-                style.color = sssp::rgb(0.25, 0.25, 1.0);
-                style.foreground = true;
-            }
-            return style;
-        });
-
-        try {
-            int width = 800;
-            int height = 800;
-            auto surface = Cairo::PdfSurface::create(args.image, width, height);
-            auto cr = Cairo::Context::create(surface);
-            cr->translate(25, 25);
-            cr->scale(width - 50, height - 50);
-            cr->save();
-            cr->set_source_rgb(1.0, 1.0, 1.0);
-            cr->paint();
-            cr->restore();
-            draw_graph(cr, graph, node_styles, edge_styles);
-        } catch (const std::ios_base::failure& ex) {
-            std::cerr << "Could not write file " << args.image << ": " << ex.what() << "\n";
         }
     }
 }
@@ -193,9 +202,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << arguments_csv_header << "," << output_line_header << "\n";
 
-    for (int i = 0; i < args.runs; ++i) {
-        run(args, i);
-    }
+    tbb::parallel_for(0, args.runs.value(), [&](int i) { run(args, i); });
 
     return 0;
 }
