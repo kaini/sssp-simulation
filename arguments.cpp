@@ -1,6 +1,40 @@
 #include "arguments.hpp"
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <sstream>
+
+extern const std::string
+    sssp::arguments_csv_header("position_alg,position_poisson_min_distance,position_poisson_max_reject,"
+                               "position_uniform_count,edge_alg,edge_planar_max_length,"
+                               "edge_planar_probability,edge_uniform_probability,cost_alg");
+
+template <typename T> static std::string na_if(bool na, const T& value) {
+    if (na) {
+        return "NA";
+    } else {
+        std::ostringstream out;
+        out << value;
+        return out.str();
+    }
+}
+
+std::string sssp::arguments_csv_values(const sssp::arguments& args) {
+    using namespace sssp;
+
+    std::ostringstream out;
+    out << args.position_gen.algorithm << ",";
+    out << na_if(args.position_gen.algorithm != position_algorithm::poisson, args.position_gen.poisson.min_distance)
+        << ",";
+    out << na_if(args.position_gen.algorithm != position_algorithm::poisson, args.position_gen.poisson.max_reject)
+        << ",";
+    out << na_if(args.position_gen.algorithm != position_algorithm::uniform, args.position_gen.uniform.count) << ",";
+    out << args.edge_gen.algorithm << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.max_length) << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.probability) << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform, args.edge_gen.uniform.probability) << ",";
+    out << args.cost_gen.algorithm;
+    return out.str();
+}
 
 boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
     namespace po = boost::program_options;

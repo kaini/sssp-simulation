@@ -100,6 +100,9 @@ struct arguments {
     std::string image = "";
 };
 
+extern const std::string arguments_csv_header;
+std::string arguments_csv_values(const arguments& args);
+
 boost::optional<arguments> parse_arguments(int argc, char* argv[]);
 
 } // namespace sssp

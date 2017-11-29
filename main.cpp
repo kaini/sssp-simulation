@@ -15,19 +15,21 @@
 namespace {
 
 struct output_line {
-    output_line(int run, int seed, size_t reachable, int relaxation_phases)
-        : run(run), seed(seed), reachable(reachable), relaxation_phases(relaxation_phases) {}
+    output_line(int run, int seed, size_t node_count, size_t reachable, int relaxation_phases)
+        : run(run), seed(seed), node_count(node_count), reachable(reachable), relaxation_phases(relaxation_phases) {}
 
     int run;
     int seed;
+    size_t node_count;
     size_t reachable;
     int relaxation_phases;
 };
 
-const char* const output_line_header = "run,seed,reachable,relaxation_phases";
+const std::string output_line_header("run,seed,node_count,reachable,relaxation_phases");
 
 std::ostream& operator<<(std::ostream& out, const output_line& line) {
-    out << line.run << "," << line.seed << "," << line.reachable << "," << line.relaxation_phases;
+    out << line.run << "," << line.seed << "," << line.node_count << "," << line.reachable << ","
+        << line.relaxation_phases;
     return out;
 }
 
@@ -124,7 +126,8 @@ void run(const sssp::arguments& args, int run_number) {
     size_t reachable_count =
         std::count_if(result.begin(), result.end(), [](const auto& n) { return n.distance < INFINITY; });
 
-    std::cout << output_line(run_number, seed, reachable_count, max_relaxation_phase + 1) << "\n";
+    std::cout << arguments_csv_values(args) << ","
+              << output_line(run_number, seed, graph.node_count(), reachable_count, max_relaxation_phase + 1) << "\n";
 
     if (args.image.size() > 0) {
         node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
@@ -184,9 +187,11 @@ int main(int argc, char* argv[]) {
         std::cout << " " << argv[i];
     }
     std::cout << "\n";
+
     auto now = boost::posix_time::second_clock::local_time();
     std::cout << "# " << now << "\n";
-    std::cout << output_line_header << "\n";
+
+    std::cout << arguments_csv_header << "," << output_line_header << "\n";
 
     for (int i = 0; i < args.runs; ++i) {
         run(args, i);
