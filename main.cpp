@@ -7,20 +7,35 @@
 #include "graph.hpp"
 #include "math.hpp"
 #include <boost/assert.hpp>
+#include <boost/date_time.hpp>
 #include <cairomm/cairomm.h>
 #include <iostream>
 #include <random>
 
-int main(int argc, char* argv[]) {
+namespace {
+
+struct output_line {
+    output_line(int run, int seed, size_t reachable, int relaxation_phases)
+        : run(run), seed(seed), reachable(reachable), relaxation_phases(relaxation_phases) {}
+
+    int run;
+    int seed;
+    size_t reachable;
+    int relaxation_phases;
+};
+
+const char* const output_line_header = "run,seed,reachable,relaxation_phases";
+
+std::ostream& operator<<(std::ostream& out, const output_line& line) {
+    out << line.run << "," << line.seed << "," << line.reachable << "," << line.relaxation_phases;
+    return out;
+}
+
+void run(const sssp::arguments& args, int run_number) {
     using namespace sssp;
 
-    boost::optional<arguments> args_opt = parse_arguments(argc, argv);
-    if (!args_opt) {
-        return 1;
-    }
-    arguments args = *args_opt;
-
-    std::mt19937_64 rng(args.seed);
+    int seed = args.seed ^ run_number;
+    std::mt19937_64 rng(seed);
     std::uniform_int_distribution<int> uniform_seed(INT_MIN, INT_MAX);
     int position_seed = uniform_seed(rng);
     int cost_seed = uniform_seed(rng);
@@ -37,7 +52,7 @@ int main(int argc, char* argv[]) {
             break;
         default:
             BOOST_ASSERT(false);
-            return 1;
+            return;
     }
 
     graph graph;
@@ -60,7 +75,7 @@ int main(int argc, char* argv[]) {
             break;
         default:
             BOOST_ASSERT(false);
-            return 1;
+            return;
     }
 
     switch (args.edge_gen.algorithm) {
@@ -77,7 +92,7 @@ int main(int argc, char* argv[]) {
             break;
         default:
             BOOST_ASSERT(false);
-            return 1;
+            return;
     }
 
     size_t start_node = 0;
@@ -97,7 +112,7 @@ int main(int argc, char* argv[]) {
             break;
         default:
             BOOST_ASSERT(false);
-            return 1;
+            return;
     }
 
     int max_relaxation_phase =
@@ -106,44 +121,75 @@ int main(int argc, char* argv[]) {
                          [](const auto& a, const auto& b) { return a.relaxation_phase < b.relaxation_phase; })
             ->relaxation_phase;
 
-    node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
-        node_style style;
-        style.position = positions[i];
-        if (result[i].relaxation_phase == -1) {
-            style.color = rgb(1.0, 0.5, 0.5);
-        } else {
-            double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_relaxation_phase;
-            style.color = rgb(c, c, 1.0);
-            style.text = std::to_string(result[i].relaxation_phase);
-        }
-        return style;
-    });
+    size_t reachable_count =
+        std::count_if(result.begin(), result.end(), [](const auto& n) { return n.distance < INFINITY; });
 
-    edge_map<edge_style> edge_styles = graph.make_edge_map([&](size_t source, size_t destination) {
-        edge_style style;
-        if (result[destination].predecessor == source) {
-            style.line_width *= 2;
-            style.color = sssp::rgb(0.25, 0.25, 1.0);
-            style.foreground = true;
-        }
-        return style;
-    });
+    std::cout << output_line(run_number, seed, reachable_count, max_relaxation_phase + 1) << "\n";
 
-    try {
-        int width = 800;
-        int height = 800;
-        auto surface = Cairo::PdfSurface::create("image.pdf", width, height);
-        auto cr = Cairo::Context::create(surface);
-        cr->translate(25, 25);
-        cr->scale(width - 50, height - 50);
-        cr->save();
-        cr->set_source_rgb(1.0, 1.0, 1.0);
-        cr->paint();
-        cr->restore();
-        draw_graph(cr, graph, node_styles, edge_styles);
-    } catch (const std::ios_base::failure& ex) {
-        std::cerr << "Could not write file image.pdf: " << ex.what() << "\n";
+    if (args.image.size() > 0) {
+        node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
+            node_style style;
+            style.position = positions[i];
+            if (result[i].relaxation_phase == -1) {
+                style.color = rgb(1.0, 0.5, 0.5);
+            } else {
+                double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_relaxation_phase;
+                style.color = rgb(c, c, 1.0);
+                style.text = std::to_string(result[i].relaxation_phase);
+            }
+            return style;
+        });
+
+        edge_map<edge_style> edge_styles = graph.make_edge_map([&](size_t source, size_t destination) {
+            edge_style style;
+            if (result[destination].predecessor == source) {
+                style.line_width *= 2;
+                style.color = sssp::rgb(0.25, 0.25, 1.0);
+                style.foreground = true;
+            }
+            return style;
+        });
+
+        try {
+            int width = 800;
+            int height = 800;
+            auto surface = Cairo::PdfSurface::create(args.image, width, height);
+            auto cr = Cairo::Context::create(surface);
+            cr->translate(25, 25);
+            cr->scale(width - 50, height - 50);
+            cr->save();
+            cr->set_source_rgb(1.0, 1.0, 1.0);
+            cr->paint();
+            cr->restore();
+            draw_graph(cr, graph, node_styles, edge_styles);
+        } catch (const std::ios_base::failure& ex) {
+            std::cerr << "Could not write file " << args.image << ": " << ex.what() << "\n";
+        }
+    }
+}
+
+} // namespace
+
+int main(int argc, char* argv[]) {
+    using namespace sssp;
+
+    boost::optional<arguments> args_opt = parse_arguments(argc, argv);
+    if (!args_opt) {
         return 1;
+    }
+    arguments args = *args_opt;
+
+    std::cout << "# sssp-simulation";
+    for (int i = 1; i < argc; ++i) {
+        std::cout << " " << argv[i];
+    }
+    std::cout << "\n";
+    auto now = boost::posix_time::second_clock::local_time();
+    std::cout << "# " << now << "\n";
+    std::cout << output_line_header << "\n";
+
+    for (int i = 0; i < args.runs; ++i) {
+        run(args, i);
     }
 
     return 0;

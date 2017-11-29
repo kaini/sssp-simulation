@@ -23,7 +23,7 @@ endif ()
 
 # Find external libraries
 #########################
-find_package (Boost REQUIRED program_options unit_test_framework REQUIRED)
+find_package (Boost REQUIRED date_time program_options unit_test_framework REQUIRED)
 
 find_path (Cairo_INCLUDE_DIRS cairo.h HINTS /usr/include/cairo)
 find_library (Cairo_LIBRARIES cairo)

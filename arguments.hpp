@@ -96,6 +96,8 @@ struct arguments {
 
     int seed = 42;
     sssp_algorithm algorithm = sssp_algorithm::dijkstra;
+    positive_int runs = 1;
+    std::string image = "";
 };
 
 boost::optional<arguments> parse_arguments(int argc, char* argv[]);
