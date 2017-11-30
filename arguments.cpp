@@ -6,7 +6,7 @@
 extern const std::string
     sssp::arguments_csv_header("position_alg,position_poisson_min_distance,position_poisson_max_reject,"
                                "position_uniform_count,edge_alg,edge_planar_max_length,"
-                               "edge_planar_probability,edge_uniform_probability,cost_alg");
+                               "edge_planar_probability,edge_uniform_probability,cost_alg,alg");
 
 template <typename T> static std::string na_if(bool na, const T& value) {
     if (na) {
@@ -32,7 +32,8 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.max_length) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.probability) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform, args.edge_gen.uniform.probability) << ",";
-    out << args.cost_gen.algorithm;
+    out << args.cost_gen.algorithm << ",";
+    out << args.algorithm;
     return out.str();
 }
 
