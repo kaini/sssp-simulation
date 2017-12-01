@@ -18,6 +18,10 @@ struct compare_distance_in {
     bool operator()(const node_info* a, const node_info* b) const;
 };
 
+struct compare_cost {
+    bool operator()(const sssp::edge_info& a, const sssp::edge_info& b) const { return a.cost > b.cost; }
+};
+
 using node_distance_queue = boost::heap::pairing_heap<node_info*, boost::heap::compare<compare_distance>>;
 using node_distance_out_queue = boost::heap::pairing_heap<node_info*, boost::heap::compare<compare_distance_out>>;
 using node_distance_in_queue = boost::heap::pairing_heap<node_info*, boost::heap::compare<compare_distance_in>>;
@@ -29,12 +33,32 @@ enum class node_state {
 };
 
 struct node_info {
-    node_info(size_t index, double min_outgoing_cost, double min_incoming_cost)
-        : index(index), min_outgoing_cost(min_outgoing_cost), min_incoming_cost(min_incoming_cost){};
+    node_info(size_t index, const sssp::graph& graph) : index(index) {
+        outgoing_edges = graph.outgoing_edges(index);
+        std::sort(outgoing_edges.begin(), outgoing_edges.end(), compare_cost());
+        incoming_edges = graph.incoming_edges(index);
+        std::sort(incoming_edges.begin(), incoming_edges.end(), compare_cost());
+    }
+
+    double min_outgoing_cost() const {
+        if (outgoing_edges.empty()) {
+            return INFINITY;
+        } else {
+            return outgoing_edges.back().cost;
+        }
+    }
+
+    double min_incoming_cost() const {
+        if (incoming_edges.empty()) {
+            return INFINITY;
+        } else {
+            return incoming_edges.back().cost;
+        }
+    }
 
     size_t index;
-    double min_outgoing_cost;
-    double min_incoming_cost;
+    std::vector<sssp::edge_info> outgoing_edges; // sorted by cost descending
+    std::vector<sssp::edge_info> incoming_edges; // sorted by cost descending
 
     node_state state = node_state::unreached;
     size_t predecessor = -1;
@@ -51,37 +75,18 @@ bool compare_distance::operator()(const node_info* a, const node_info* b) const 
 }
 
 bool compare_distance_out::operator()(const node_info* a, const node_info* b) const {
-    return a->distance + a->min_outgoing_cost > b->distance + b->min_outgoing_cost;
+    return a->distance + a->min_outgoing_cost() > b->distance + b->min_outgoing_cost();
 }
 
 bool compare_distance_in::operator()(const node_info* a, const node_info* b) const {
-    return a->distance - a->min_incoming_cost > b->distance - b->min_incoming_cost;
+    return a->distance - a->min_incoming_cost() > b->distance - b->min_incoming_cost();
 }
 
 } // namespace
 
-sssp::node_map<sssp::dijkstra_result> sssp::crauser(const graph& graph, size_t start_node, crauser_criteria criteria) {
-    node_map<node_info> info = graph.make_node_map([&](size_t i) {
-        double min_outgoing_cost = INFINITY;
-        const auto& outgoing_edges = graph.outgoing_edges(i);
-        if (outgoing_edges.size()) {
-            min_outgoing_cost = std::min_element(outgoing_edges.begin(),
-                                                 outgoing_edges.end(),
-                                                 [](const auto& a, const auto& b) { return a.cost < b.cost; })
-                                    ->cost;
-        }
-
-        double min_incoming_cost = INFINITY;
-        const auto& incoming_edges = graph.incoming_edges(i);
-        if (incoming_edges.size()) {
-            min_incoming_cost = std::min_element(incoming_edges.begin(),
-                                                 incoming_edges.end(),
-                                                 [](const auto& a, const auto& b) { return a.cost < b.cost; })
-                                    ->cost;
-        }
-
-        return node_info(i, min_outgoing_cost, min_incoming_cost);
-    });
+sssp::node_map<sssp::dijkstra_result>
+sssp::crauser(const graph& graph, size_t start_node, crauser_criteria criteria, bool dynamic) {
+    node_map<node_info> info = graph.make_node_map([&](size_t i) { return node_info(i, graph); });
     node_distance_queue distance_queue;         // ordered by distance
     node_distance_out_queue distance_out_queue; // ordered by distance + cheapest outgoing edge
     node_distance_in_queue distance_in_queue;   // ordered by distance - cheapest incoming edge
@@ -103,8 +108,8 @@ sssp::node_map<sssp::dijkstra_result> sssp::crauser(const graph& graph, size_t s
         // OUT criteria
         if (criteria == crauser_criteria::out || criteria == crauser_criteria::inout) {
             node_info* min_out_node = distance_out_queue.top();
-            double threshold = min_out_node->distance + min_out_node->min_outgoing_cost;
-            while (distance_queue.size() > 0 && distance_queue.top()->distance <= threshold) {
+            double threshold = min_out_node->distance + min_out_node->min_outgoing_cost();
+            while (!distance_queue.empty() && distance_queue.top()->distance <= threshold) {
                 node_info* node = distance_queue.top();
                 node->state = node_state::relaxed;
                 node->relaxation_phase = current_phase;
@@ -117,8 +122,9 @@ sssp::node_map<sssp::dijkstra_result> sssp::crauser(const graph& graph, size_t s
 
         // IN criteria
         if (criteria == crauser_criteria::in || criteria == crauser_criteria::inout) {
-            while (distance_in_queue.size() > 0 &&
-                   distance_in_queue.top()->distance - distance_in_queue.top()->min_incoming_cost <= current_distance) {
+            while (!distance_in_queue.empty() &&
+                   distance_in_queue.top()->distance - distance_in_queue.top()->min_incoming_cost() <=
+                       current_distance) {
                 node_info* node = distance_in_queue.top();
                 node->state = node_state::relaxed;
                 node->relaxation_phase = current_phase;
@@ -148,6 +154,35 @@ sssp::node_map<sssp::dijkstra_result> sssp::crauser(const graph& graph, size_t s
                         distance_queue.update(destination_node.distance_queue_handle);
                         distance_out_queue.update(destination_node.distance_out_queue_handle);
                         distance_in_queue.update(destination_node.distance_in_queue_handle);
+                    }
+                }
+            }
+        }
+
+        if (dynamic) {
+            for (node_info* current_node : current_nodes) {
+                for (const edge_info& out_edge : graph.outgoing_edges(current_node->index)) {
+                    node_info& dest_node = info[out_edge.destination];
+                    if (dest_node.state != node_state::relaxed) {
+                        while (!dest_node.incoming_edges.empty() &&
+                               info[dest_node.incoming_edges.back().source].state == node_state::relaxed) {
+                            dest_node.incoming_edges.pop_back();
+                        }
+                        if (dest_node.state == node_state::queued) {
+                            distance_in_queue.update(dest_node.distance_in_queue_handle);
+                        }
+                    }
+                }
+                for (const edge_info& in_edge : graph.incoming_edges(current_node->index)) {
+                    node_info& src_node = info[in_edge.source];
+                    if (src_node.state != node_state::relaxed) {
+                        while (!src_node.outgoing_edges.empty() &&
+                               info[src_node.outgoing_edges.back().destination].state == node_state::relaxed) {
+                            src_node.outgoing_edges.pop_back();
+                        }
+                        if (src_node.state == node_state::queued) {
+                            distance_out_queue.update(src_node.distance_out_queue_handle);
+                        }
                     }
                 }
             }

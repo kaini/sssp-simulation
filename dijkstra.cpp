@@ -21,7 +21,7 @@ enum class node_state {
 };
 
 struct node_info {
-    node_info(size_t index) : index(index){};
+    node_info(size_t index) : index(index) {}
 
     size_t index;
     node_state state = node_state::unreached;

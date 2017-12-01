@@ -109,13 +109,22 @@ void run(const sssp::arguments& args, int run_number) {
             result = sssp::dijkstra(graph, start_node);
             break;
         case sssp_algorithm::crauser_in:
-            result = sssp::crauser(graph, start_node, crauser_criteria::in);
+            result = sssp::crauser(graph, start_node, crauser_criteria::in, false);
             break;
         case sssp_algorithm::crauser_out:
-            result = sssp::crauser(graph, start_node, crauser_criteria::out);
+            result = sssp::crauser(graph, start_node, crauser_criteria::out, false);
             break;
         case sssp_algorithm::crauser_inout:
-            result = sssp::crauser(graph, start_node, crauser_criteria::inout);
+            result = sssp::crauser(graph, start_node, crauser_criteria::inout, false);
+            break;
+        case sssp_algorithm::crauser_in_dyn:
+            result = sssp::crauser(graph, start_node, crauser_criteria::in, true);
+            break;
+        case sssp_algorithm::crauser_out_dyn:
+            result = sssp::crauser(graph, start_node, crauser_criteria::out, true);
+            break;
+        case sssp_algorithm::crauser_inout_dyn:
+            result = sssp::crauser(graph, start_node, crauser_criteria::inout, true);
             break;
         case sssp_algorithm::optimal_phases:
             result = sssp::optimal_phases(graph, start_node);

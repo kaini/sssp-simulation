@@ -7,6 +7,9 @@ namespace sssp {
 
 STRINGY_ENUM(crauser_criteria, in, out, inout)
 
-node_map<dijkstra_result> crauser(const graph& graph, size_t start_node, crauser_criteria criteria);
+// Implements Crauser's algorithm with either the IN, INOUT or OUT criteria. Additionally
+// instead of using the minimal edges, with dynamic=true, one can use the minimal none-
+// relaxed edge.
+node_map<dijkstra_result> crauser(const graph& graph, size_t start_node, crauser_criteria criteria, bool dynamic);
 
 } // namespace sssp

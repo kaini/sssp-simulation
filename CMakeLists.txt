@@ -46,12 +46,12 @@ find_library (Tbb_LIBRARIES tbb)
 # sssp-simulation library
 #########################
 set (HEADERS
-	arguments.hpp crauser.hpp dijkstra.hpp draw_graph.hpp generate_edges.hpp generate_positions.hpp graph.hpp math.hpp
-	optimal_phases.hpp partial_shuffle.hpp stringy_enum.hpp
+	arguments.hpp crauser.hpp dijkstra.hpp draw_graph.hpp generate_edges.hpp generate_positions.hpp
+	graph.hpp math.hpp optimal_phases.hpp partial_shuffle.hpp stringy_enum.hpp
 )
 set (SOURCES
-	arguments.cpp crauser.cpp dijkstra.cpp draw_graph.cpp generate_edges.cpp generate_positions.cpp graph.cpp math.cpp
-	optimal_phases.cpp
+	arguments.cpp crauser.cpp dijkstra.cpp draw_graph.cpp generate_edges.cpp generate_positions.cpp
+	graph.cpp math.cpp optimal_phases.cpp
 )
 add_library (sssp STATIC ${HEADERS} ${SOURCES})
 target_compile_definitions (sssp PUBLIC -D_USE_MATH_DEFINES)
