@@ -1,5 +1,5 @@
-#include "crauser.hpp"
 #include "graph.hpp"
+#include "optimal_phases.hpp"
 #include "test_graph.hpp"
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
@@ -8,14 +8,10 @@
 using namespace sssp;
 namespace data = boost::unit_test::data;
 
-static const std::vector<crauser_criteria> criterias{crauser_criteria::out,
-                                                     crauser_criteria::in,
-                                                     crauser_criteria::inout};
-
-BOOST_DATA_TEST_CASE(crauser_test, data::xrange(1000) * criterias, seed, criteria) {
+BOOST_DATA_TEST_CASE(crauser_test, data::xrange(1000), seed) {
     graph g = make_test_graph(seed);
 
-    node_map<dijkstra_result> result = crauser(g, 0, criteria);
+    node_map<dijkstra_result> result = optimal_phases(g, 0);
 
     node_map<dijkstra_result> reference = dijkstra(g, 0);
     for (size_t node = 0; node < g.node_count(); ++node) {

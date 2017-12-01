@@ -6,6 +6,7 @@
 #include "generate_positions.hpp"
 #include "graph.hpp"
 #include "math.hpp"
+#include "optimal_phases.hpp"
 #include <boost/assert.hpp>
 #include <boost/date_time.hpp>
 #include <cairomm/cairomm.h>
@@ -115,6 +116,9 @@ void run(const sssp::arguments& args, int run_number) {
             break;
         case sssp_algorithm::crauser_inout:
             result = sssp::crauser(graph, start_node, crauser_criteria::inout);
+            break;
+        case sssp_algorithm::optimal_phases:
+            result = sssp::optimal_phases(graph, start_node);
             break;
         default:
             BOOST_ASSERT(false);
