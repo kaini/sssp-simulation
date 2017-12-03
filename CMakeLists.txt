@@ -25,17 +25,17 @@ endif ()
 #########################
 find_package (Boost REQUIRED date_time program_options unit_test_framework REQUIRED)
 
-find_path (Cairo_INCLUDE_DIRS cairo.h HINTS /usr/include/cairo)
+find_path (Cairo_INCLUDE_DIRS cairo.h HINTS /usr/include/cairo /usr/local/include/cairo)
 find_library (Cairo_LIBRARIES cairo)
 
-find_path (Freetype_INCLUDE_DIRS ft2build.h HINTS /usr/include/freetype2)
+find_path (Freetype_INCLUDE_DIRS ft2build.h HINTS /usr/include/freetype2 /usr/local/include/freetype2)
 
-find_path (Sigcpp_INCLUDE_DIR_1 sigc++/sigc++.h HINTS /usr/include/sigc++-2.0)
-find_path (Sigcpp_INCLUDE_DIR_2 sigc++config.h HINTS /usr/lib/${C_ARCH}/sigc++-2.0/include)
+find_path (Sigcpp_INCLUDE_DIR_1 sigc++/sigc++.h HINTS /usr/include/sigc++-2.0 /usr/local/include/sigc++-2.0)
+find_path (Sigcpp_INCLUDE_DIR_2 sigc++config.h HINTS /usr/lib/${C_ARCH}/sigc++-2.0/include /usr/local/lib/sigc++-2.0/include)
 set (Sigcpp_INCLUDE_DIRS "${Sigcpp_INCLUDE_DIR_1}" "${Sigcpp_INCLUDE_DIR_2}")
 
-find_path (Cairomm_INCLUDE_DIR_1 cairomm/cairomm.h HINTS /usr/include/cairomm-1.0)
-find_path (Cairomm_INCLUDE_DIR_2 cairommconfig.h HINTS /usr/lib/${C_ARCH}/cairomm-1.0/include)
+find_path (Cairomm_INCLUDE_DIR_1 cairomm/cairomm.h HINTS /usr/include/cairomm-1.0 /usr/local/include/cairomm-1.0)
+find_path (Cairomm_INCLUDE_DIR_2 cairommconfig.h HINTS /usr/lib/${C_ARCH}/cairomm-1.0/include /usr/local/lib/cairomm-1.0/include)
 set (Cairomm_INCLUDE_DIRS "${Cairomm_INCLUDE_DIR_1}" "${Cairomm_INCLUDE_DIR_2}")
 find_library (Cairomm_LIBRARIES cairomm-1.0 NAMES cairomm-1 cairomm)
 
