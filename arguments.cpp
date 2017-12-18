@@ -81,7 +81,7 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
         ("seed,s", po::value(&args.seed)->default_value(args.seed),
             "Set the seed.")
         ("algorithm,a", po::value(&args.algorithm)->default_value(args.algorithm),
-            "Set the SSSP algorithm. Possible values:\n  - dijkstra: \tDijkstra's algorithm\n  - crauser_in: \tCrauser et al. using only the IN criteria.\n  - crauser_out: \tCrauser et al. using only the OUT criteria.\n  - crauser_inout: \tCrauser et al. using both the IN and the OUT criteria.\n  - optimal_phases: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.")
+            "Set the SSSP algorithm. Possible values:\n  - dijkstra: \tDijkstra's algorithm\n  - crauser_in: \tCrauser et al. using only the IN criteria.\n  - crauser_out: \tCrauser et al. using only the OUT criteria.\n  - crauser_inout: \tCrauser et al. using both the IN and the OUT criteria.\n  - optimal_phases: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.\n  - heuristic_relaxation: \tUses a heuristic to decide which nodes can be relaxed. The graph has to be euclidean.")
         ("runs,r", po::value(&args.runs)->default_value(args.runs),
             "Set the number of runs. (> 0)")
         ("image,i", po::value(&args.image)->default_value(""),
@@ -104,6 +104,12 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
 
     if (vm.count("help")) {
         std::cout << all_opts << "\n";
+        return {};
+    }
+
+    if (args.algorithm == sssp_algorithm::heuristic_relaxation &&
+        args.cost_gen.algorithm != cost_algorithm::euclidean) {
+        std::cerr << "`-a heuristic_relaxation` cannot be used without `-C euclidean`.\n";
         return {};
     }
 

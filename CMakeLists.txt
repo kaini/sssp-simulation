@@ -46,12 +46,30 @@ find_library (Tbb_LIBRARIES tbb)
 # sssp-simulation library
 #########################
 set (HEADERS
-	arguments.hpp crauser.hpp dijkstra.hpp draw_graph.hpp generate_edges.hpp generate_positions.hpp
-	graph.hpp math.hpp optimal_phases.hpp partial_shuffle.hpp stringy_enum.hpp
+	arguments.hpp
+	crauser.hpp
+	dijkstra.hpp
+	draw_graph.hpp
+	generate_edges.hpp
+	generate_positions.hpp
+	graph.hpp
+	heuristic_relaxing_dijkstra.hpp
+	math.hpp
+	optimal_phases.hpp
+	partial_shuffle.hpp
+	stringy_enum.hpp
 )
 set (SOURCES
-	arguments.cpp crauser.cpp dijkstra.cpp draw_graph.cpp generate_edges.cpp generate_positions.cpp
-	graph.cpp math.cpp optimal_phases.cpp
+	arguments.cpp
+	crauser.cpp
+	dijkstra.cpp
+	draw_graph.cpp
+	generate_edges.cpp
+	generate_positions.cpp
+	graph.cpp
+	heuristic_relaxing_dijkstra.cpp
+	math.cpp
+	optimal_phases.cpp
 )
 add_library (sssp STATIC ${HEADERS} ${SOURCES})
 target_compile_definitions (sssp PUBLIC -D_USE_MATH_DEFINES)
@@ -76,8 +94,14 @@ set (TEST_HEADERS
 	tests/test_graph.hpp
 )
 set (TESTS_SOURCES
-	tests/crauser_test.cpp tests/dijkstra_test.cpp tests/graph_test.cpp tests/math_test.cpp tests/optimal_phases_test.cpp
-	tests/test.cpp tests/test_graph.cpp
+	tests/crauser_test.cpp
+	tests/dijkstra_test.cpp
+	tests/graph_test.cpp
+	tests/math_test.cpp
+	tests/optimal_phases_test.cpp
+	tests/test.cpp
+	tests/test_graph.cpp
+	tests/heuristic_relaxing_dijkstra_test.cpp
 )
 add_executable (tests ${TESTS_SOURCES} ${TEST_HEADERS})
 target_compile_definitions (tests PUBLIC -DBOOST_TEST_DYN_LINK)

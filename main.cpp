@@ -5,6 +5,7 @@
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
 #include "graph.hpp"
+#include "heuristic_relaxing_dijkstra.hpp"
 #include "math.hpp"
 #include "optimal_phases.hpp"
 #include <boost/assert.hpp>
@@ -106,28 +107,32 @@ void run(const sssp::arguments& args, int run_number) {
     node_map<dijkstra_result> result;
     switch (args.algorithm) {
         case sssp_algorithm::dijkstra:
-            result = sssp::dijkstra(graph, start_node);
+            result = dijkstra(graph, start_node);
             break;
         case sssp_algorithm::crauser_in:
-            result = sssp::crauser(graph, start_node, crauser_criteria::in, false);
+            result = crauser(graph, start_node, crauser_criteria::in, false);
             break;
         case sssp_algorithm::crauser_out:
-            result = sssp::crauser(graph, start_node, crauser_criteria::out, false);
+            result = crauser(graph, start_node, crauser_criteria::out, false);
             break;
         case sssp_algorithm::crauser_inout:
-            result = sssp::crauser(graph, start_node, crauser_criteria::inout, false);
+            result = crauser(graph, start_node, crauser_criteria::inout, false);
             break;
         case sssp_algorithm::crauser_in_dyn:
-            result = sssp::crauser(graph, start_node, crauser_criteria::in, true);
+            result = crauser(graph, start_node, crauser_criteria::in, true);
             break;
         case sssp_algorithm::crauser_out_dyn:
-            result = sssp::crauser(graph, start_node, crauser_criteria::out, true);
+            result = crauser(graph, start_node, crauser_criteria::out, true);
             break;
         case sssp_algorithm::crauser_inout_dyn:
-            result = sssp::crauser(graph, start_node, crauser_criteria::inout, true);
+            result = crauser(graph, start_node, crauser_criteria::inout, true);
             break;
         case sssp_algorithm::optimal_phases:
-            result = sssp::optimal_phases(graph, start_node);
+            result = optimal_phases(graph, start_node);
+            break;
+        case sssp_algorithm::heuristic_relaxation:
+            result = heuristic_relaxing_dijkstra(
+                graph, start_node, [&](size_t node) { return distance(positions[start_node], positions[node]); });
             break;
         default:
             BOOST_ASSERT(false);

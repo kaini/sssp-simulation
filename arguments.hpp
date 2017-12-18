@@ -19,7 +19,8 @@ STRINGY_ENUM(sssp_algorithm,
              crauser_in_dyn,
              crauser_out_dyn,
              crauser_inout_dyn,
-             optimal_phases)
+             optimal_phases,
+             heuristic_relaxation)
 
 template <typename T> using valid_fn = bool (*)(const T&);
 template <typename T> using default_fn = T (*)();
