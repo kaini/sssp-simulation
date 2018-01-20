@@ -1,81 +1,57 @@
 #include "dijkstra.hpp"
 #include <boost/assert.hpp>
-#include <boost/heap/pairing_heap.hpp>
 #include <limits>
 #include <vector>
 
-namespace {
-
-struct node_info;
-
-struct compare_distance {
-    bool operator()(const node_info* a, const node_info* b) const;
-};
-
-using node_queue = boost::heap::pairing_heap<node_info*, boost::heap::compare<compare_distance>>;
-
-enum class node_state {
-    unreached,
-    queued,
-    relaxed,
-};
-
-struct node_info {
-    node_info(size_t index) : index(index) {}
-
-    size_t index;
-    node_state state = node_state::unreached;
-    size_t predecessor = -1;
-    int relaxation_phase = -1;
-    double distance = INFINITY;
-    node_queue::handle_type queue_handle;
-};
-
-bool compare_distance::operator()(const node_info* a, const node_info* b) const {
-    return a->distance > b->distance;
-}
-
-} // namespace
-
-sssp::node_map<sssp::dijkstra_result> sssp::dijkstra(const graph& graph, size_t start_node) {
-    node_map<node_info> info = graph.make_node_map([](size_t i) { return node_info(i); });
-    node_queue queue;
-
-    info[start_node].state = node_state::queued;
-    info[start_node].distance = 0.0;
-    info[start_node].queue_handle = queue.push(&info[start_node]);
-
+sssp::node_map<sssp::dijkstra_result>
+sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<criteria>& criteria) {
+    node_map<dijkstra_result> info = graph.make_node_map([](size_t i) { return dijkstra_result(); });
     int current_phase = 0;
-    while (!queue.empty()) {
-        node_info& current_node = *queue.top();
-        queue.pop();
-        current_node.state = node_state::relaxed;
-        current_node.relaxation_phase = current_phase;
 
-        for (const edge_info& edge : graph.outgoing_edges(current_node.index)) {
-            node_info& destination_node = info[edge.destination];
-            if (destination_node.state != node_state::relaxed &&
-                current_node.distance + edge.cost < destination_node.distance) {
-                destination_node.distance = current_node.distance + edge.cost;
-                destination_node.predecessor = current_node.index;
-                if (destination_node.state == node_state::unreached) {
-                    destination_node.state = node_state::queued;
-                    destination_node.queue_handle = queue.push(&destination_node);
-                } else {
-                    BOOST_ASSERT(destination_node.state == node_state::queued);
-                    queue.update(destination_node.queue_handle);
+    // Put the start node in the fringe set.
+    info[start_node].distance = 0.0;
+    for (auto& crit : criteria) {
+        crit.changed_predecessor(start_node, size_t(-1), 0.0);
+    }
+
+    while (true) {
+        // Find nodes to be relaxed.
+        std::unordered_set<size_t> todo;
+        for (auto& crit : criteria) {
+            auto nodes = crit.relaxable_nodes();
+            todo.insert(nodes.begin(), nodes.end());
+        }
+
+        // If there is nothing more to do, we are done.
+        if (todo.empty()) {
+            break;
+        }
+
+        // Relax each node.
+        for (size_t node : todo) {
+            dijkstra_result& current_node = info[node];
+            BOOST_ASSERT(!current_node.settled());
+            current_node.relaxation_phase = current_phase;
+
+            for (const edge_info& edge : graph.outgoing_edges(node)) {
+                dijkstra_result& destination_node = info[edge.destination];
+                if (!destination_node.settled() && current_node.distance + edge.cost < destination_node.distance) {
+                    destination_node.distance = current_node.distance + edge.cost;
+                    destination_node.predecessor = node;
+                    for (auto& crit : criteria) {
+                        crit.changed_predecessor(edge.destination, node, destination_node.distance);
+                    }
                 }
+            }
+
+            for (auto& crit : criteria) {
+                crit.relaxed_node(node);
             }
         }
 
+        // Next round.
         ++current_phase;
     }
 
-    return graph.make_node_map([&](size_t i) {
-        dijkstra_result result;
-        result.predecessor = info[i].predecessor;
-        result.distance = info[i].distance;
-        result.relaxation_phase = info[i].relaxation_phase;
-        return result;
-    });
+    return info;
 }

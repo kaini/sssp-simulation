@@ -1,3 +1,4 @@
+#include "crit_dijkstra.hpp"
 #include "dijkstra.hpp"
 #include "graph.hpp"
 #include <boost/test/unit_test.hpp>
@@ -6,7 +7,7 @@
 using namespace sssp;
 namespace tt = boost::test_tools;
 
-BOOST_AUTO_TEST_CASE(dijkstra_test_1) {
+BOOST_AUTO_TEST_CASE(dijkstra_basic_test_1) {
     graph g;
     for (size_t i = 0; i < 4; ++i) {
         g.add_node();
@@ -16,7 +17,9 @@ BOOST_AUTO_TEST_CASE(dijkstra_test_1) {
     g.add_edge(2, 3, 0.3);
     g.add_edge(3, 1, 0.3);
 
-    node_map<dijkstra_result> result = dijkstra(g, 0);
+    boost::base_collection<criteria> criteria;
+    criteria.insert(smallest_tentative_distance(&g, 0));
+    node_map<dijkstra_result> result = dijkstra(g, 0, criteria);
 
     BOOST_TEST_REQUIRE(result.size() == 4);
     BOOST_TEST(result[0].predecessor == -1);
@@ -29,7 +32,7 @@ BOOST_AUTO_TEST_CASE(dijkstra_test_1) {
     BOOST_TEST(result[3].distance == 0.6, tt::tolerance(DBL_EPSILON));
 }
 
-BOOST_AUTO_TEST_CASE(dijkstra_test_2) {
+BOOST_AUTO_TEST_CASE(dijkstra_basic_test_2) {
     graph g;
     for (size_t i = 0; i < 10; ++i) {
         g.add_node();
@@ -42,7 +45,9 @@ BOOST_AUTO_TEST_CASE(dijkstra_test_2) {
         }
     }
 
-    node_map<dijkstra_result> result = dijkstra(g, 0);
+    boost::base_collection<criteria> criteria;
+    criteria.insert(smallest_tentative_distance(&g, 0));
+    node_map<dijkstra_result> result = dijkstra(g, 0, criteria);
 
     BOOST_TEST_REQUIRE(result.size() == 10);
     BOOST_TEST(result[0].predecessor == -1);
@@ -53,7 +58,7 @@ BOOST_AUTO_TEST_CASE(dijkstra_test_2) {
     }
 }
 
-BOOST_AUTO_TEST_CASE(dijkstra_test_3) {
+BOOST_AUTO_TEST_CASE(dijkstra_basic_test_3) {
     graph g;
     g.add_node();
     g.add_node();
@@ -63,7 +68,9 @@ BOOST_AUTO_TEST_CASE(dijkstra_test_3) {
     g.add_edge(2, 1, 1.0);
     g.add_edge(2, 0, 1.0);
 
-    node_map<dijkstra_result> result = dijkstra(g, 0);
+    boost::base_collection<criteria> criteria;
+    criteria.insert(smallest_tentative_distance(&g, 0));
+    node_map<dijkstra_result> result = dijkstra(g, 0, criteria);
 
     BOOST_TEST_REQUIRE(result.size() == 3);
     BOOST_TEST(result[0].predecessor == -1);

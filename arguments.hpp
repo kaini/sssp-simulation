@@ -4,6 +4,7 @@
 #include <boost/optional.hpp>
 #include <cstdint>
 #include <stdexcept>
+#include <unordered_set>
 #include <vector>
 
 namespace sssp {
@@ -11,16 +12,9 @@ namespace sssp {
 STRINGY_ENUM(position_algorithm, poisson, uniform)
 STRINGY_ENUM(edge_algorithm, planar, uniform)
 STRINGY_ENUM(cost_algorithm, uniform, one, euclidean)
-STRINGY_ENUM(sssp_algorithm,
-             dijkstra,
-             crauser_in,
-             crauser_out,
-             crauser_inout,
-             crauser_in_dyn,
-             crauser_out_dyn,
-             crauser_inout_dyn,
-             optimal_phases,
-             heuristic_relaxation)
+STRINGY_ENUM(sssp_algorithm, dijkstra, crauser_in, crauser_in_dyn, crauser_out, crauser_out_dyn, oracle, heuristic)
+
+std::ostream& operator<<(std::ostream& out, const std::vector<sssp_algorithm>& algorithms);
 
 template <typename T> using valid_fn = bool (*)(const T&);
 template <typename T> using default_fn = T (*)();
@@ -104,7 +98,7 @@ struct arguments {
     } cost_gen;
 
     int seed = 42;
-    sssp_algorithm algorithm = sssp_algorithm::dijkstra;
+    std::vector<sssp_algorithm> algorithms = {sssp_algorithm::dijkstra};
     positive_int runs = 1;
     std::string image = "";
 };

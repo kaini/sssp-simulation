@@ -1,6 +1,7 @@
 #include "arguments.hpp"
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <set>
 #include <sstream>
 
 extern const std::string
@@ -18,6 +19,19 @@ template <typename T> static std::string na_if(bool na, const T& value) {
     }
 }
 
+std::ostream& sssp::operator<<(std::ostream& out, const std::vector<sssp_algorithm>& algorithms) {
+    bool first = true;
+    for (const auto& algorithm : algorithms) {
+        if (!first) {
+            out << "+";
+        } else {
+            first = false;
+        }
+        out << algorithm;
+    }
+    return out;
+}
+
 std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     using namespace sssp;
 
@@ -33,7 +47,8 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.probability) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform, args.edge_gen.uniform.probability) << ",";
     out << args.cost_gen.algorithm << ",";
-    out << args.algorithm;
+    out << args.algorithms;
+
     return out.str();
 }
 
@@ -80,8 +95,8 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
             "Show this help message.")
         ("seed,s", po::value(&args.seed)->default_value(args.seed),
             "Set the seed.")
-        ("algorithm,a", po::value(&args.algorithm)->default_value(args.algorithm),
-            "Set the SSSP algorithm. Possible values:\n  - dijkstra: \tDijkstra's algorithm\n  - crauser_in: \tCrauser et al. using only the IN criteria.\n  - crauser_out: \tCrauser et al. using only the OUT criteria.\n  - crauser_inout: \tCrauser et al. using both the IN and the OUT criteria.\n  - optimal_phases: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.\n  - heuristic_relaxation: \tUses a heuristic to decide which nodes can be relaxed. The graph has to be euclidean.")
+        ("algorithm,a", po::value<std::vector<sssp_algorithm>>(&args.algorithms)->composing()->default_value(args.algorithms),
+            "Set the SSSP algorithm. This argument can be passed multiple times to combine criteria. Possible values:\n  - dijkstra: \tDijkstra's algorithm\n  - crauser_in: \tCrauser et al. using the IN criteria.\n  - crauser_in_dyn: \tCrauser et al. using the IN criteria only looking at nodes not settled.\n  - crauser_out: \tCrauser et al. using the OUT criteria.\n  - crauser_out_dyn: \tCrauser et al. using the OUT criteria only looking at nodes not settled.\n  - oracle: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.\n  - heuristic: \tUses a heuristic to decide which nodes can be relaxed. The graph has to be euclidean.")
         ("runs,r", po::value(&args.runs)->default_value(args.runs),
             "Set the number of runs. (> 0)")
         ("image,i", po::value(&args.image)->default_value(""),
@@ -107,11 +122,14 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
         return {};
     }
 
-    if (args.algorithm == sssp_algorithm::heuristic_relaxation &&
+    if (std::find(args.algorithms.begin(), args.algorithms.end(), sssp_algorithm::heuristic) != args.algorithms.end() &&
         args.cost_gen.algorithm != cost_algorithm::euclidean) {
-        std::cerr << "`-a heuristic_relaxation` cannot be used without `-C euclidean`.\n";
+        std::cerr << "`-a heuristic` cannot be used without `-C euclidean`.\n";
         return {};
     }
+
+    std::set<sssp_algorithm> algorithms_set(args.algorithms.begin(), args.algorithms.end());
+    args.algorithms = std::vector<sssp_algorithm>(algorithms_set.begin(), algorithms_set.end());
 
     return args;
 }

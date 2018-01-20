@@ -1,13 +1,14 @@
 #include "arguments.hpp"
-#include "crauser.hpp"
+#include "crit_crauser.hpp"
+#include "crit_dijkstra.hpp"
+#include "crit_heuristic.hpp"
+#include "crit_oracle.hpp"
 #include "dijkstra.hpp"
 #include "draw_graph.hpp"
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
 #include "graph.hpp"
-#include "heuristic_relaxing_dijkstra.hpp"
 #include "math.hpp"
-#include "optimal_phases.hpp"
 #include <boost/assert.hpp>
 #include <boost/date_time.hpp>
 #include <cairomm/cairomm.h>
@@ -104,40 +105,37 @@ void run(const sssp::arguments& args, int run_number) {
     }
 
     size_t start_node = 0;
-    node_map<dijkstra_result> result;
-    switch (args.algorithm) {
-        case sssp_algorithm::dijkstra:
-            result = dijkstra(graph, start_node);
-            break;
-        case sssp_algorithm::crauser_in:
-            result = crauser(graph, start_node, crauser_criteria::in, false);
-            break;
-        case sssp_algorithm::crauser_out:
-            result = crauser(graph, start_node, crauser_criteria::out, false);
-            break;
-        case sssp_algorithm::crauser_inout:
-            result = crauser(graph, start_node, crauser_criteria::inout, false);
-            break;
-        case sssp_algorithm::crauser_in_dyn:
-            result = crauser(graph, start_node, crauser_criteria::in, true);
-            break;
-        case sssp_algorithm::crauser_out_dyn:
-            result = crauser(graph, start_node, crauser_criteria::out, true);
-            break;
-        case sssp_algorithm::crauser_inout_dyn:
-            result = crauser(graph, start_node, crauser_criteria::inout, true);
-            break;
-        case sssp_algorithm::optimal_phases:
-            result = optimal_phases(graph, start_node);
-            break;
-        case sssp_algorithm::heuristic_relaxation:
-            result = heuristic_relaxing_dijkstra(
-                graph, start_node, [&](size_t node) { return distance(positions[start_node], positions[node]); });
-            break;
-        default:
-            BOOST_ASSERT(false);
-            return;
+    boost::base_collection<criteria> criteria;
+    for (sssp_algorithm crit : args.algorithms) {
+        switch (crit) {
+            case sssp_algorithm::crauser_in:
+                criteria.insert(crauser_in(&graph, start_node, false));
+                break;
+            case sssp_algorithm::crauser_in_dyn:
+                criteria.insert(crauser_in(&graph, start_node, true));
+                break;
+            case sssp_algorithm::crauser_out:
+                criteria.insert(crauser_out(&graph, start_node, false));
+                break;
+            case sssp_algorithm::crauser_out_dyn:
+                criteria.insert(crauser_out(&graph, start_node, true));
+                break;
+            case sssp_algorithm::dijkstra:
+                criteria.insert(smallest_tentative_distance(&graph, start_node));
+                break;
+            case sssp_algorithm::heuristic:
+                criteria.insert(heuristic(
+                    &graph, start_node, [&](size_t node) { return distance(positions[start_node], positions[node]); }));
+                break;
+            case sssp_algorithm::oracle:
+                criteria.insert(oracle(&graph, start_node));
+                break;
+            default:
+                BOOST_ASSERT(false);
+                break;
+        }
     }
+    node_map<dijkstra_result> result = dijkstra(graph, start_node, criteria);
 
     int max_relaxation_phase =
         std::max_element(result.begin(),
