@@ -1,5 +1,6 @@
 #include "crit_oracle.hpp"
 #include "crit_dijkstra.hpp"
+#include <cfloat>
 
 sssp::oracle::oracle(const sssp::graph* graph, size_t start_node) : criteria(graph, start_node) {
     boost::base_collection<criteria> cs;

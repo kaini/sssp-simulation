@@ -24,7 +24,7 @@ class criteria {
     virtual void relaxed_node(size_t node) = 0;
 
   protected:
-    const graph& graph() const { return *m_graph; }
+    const sssp::graph& graph() const { return *m_graph; }
     size_t start_node() const { return m_start_node; }
 
   private:
