@@ -15,8 +15,8 @@ sssp::heuristic::heuristic(const sssp::graph* graph, size_t start_node, relaxati
     }
 }
 
-std::unordered_set<size_t> sssp::heuristic::relaxable_nodes() const {
-    return m_safe_to_relax;
+void sssp::heuristic::relaxable_nodes(std::unordered_set<size_t>& output) const {
+    output.insert(m_safe_to_relax.begin(), m_safe_to_relax.end());
 }
 
 void sssp::heuristic::changed_predecessor(size_t node, size_t predecessor, double distance) {

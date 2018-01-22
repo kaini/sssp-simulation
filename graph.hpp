@@ -1,8 +1,9 @@
 #pragma once
+#include "linear_allocator.hpp"
 #include <boost/functional/hash.hpp>
 #include <cstdint>
+#include <deque>
 #include <unordered_map>
-#include <vector>
 
 namespace sssp {
 
@@ -36,7 +37,7 @@ template <typename T> using edge_map = std::unordered_map<edge_id, T>;
 class graph {
   public:
     // Empty graph.
-    graph(size_t expected_nodes = 0, size_t expected_edges_per_node = 0);
+    graph();
 
     // Add a new node without edges.
     size_t add_node();
@@ -47,9 +48,9 @@ class graph {
     size_t node_count() const;
 
     // Returns all outgoing edges of a node.
-    const std::vector<edge_info>& outgoing_edges(size_t source) const;
+    const std::deque<edge_info, local_linear_allocator<edge_info>>& outgoing_edges(size_t source) const;
     // Returns all incoming edges of a node.
-    const std::vector<edge_info>& incoming_edges(size_t destination) const;
+    const std::deque<edge_info, local_linear_allocator<edge_info>>& incoming_edges(size_t destination) const;
 
     // Creates a pre-filled node map by calling the callback.
     template <typename Fun> auto make_node_map(Fun fn) const -> node_map<decltype(fn(0))> {
@@ -64,7 +65,7 @@ class graph {
     // Creates a pre-filled edge map by calling the callback.
     template <typename Fun> auto make_edge_map(Fun fn) const -> edge_map<decltype(fn(0, 0))> {
         edge_map<decltype(fn(0, 0))> result;
-        result.reserve(m_nodes.size() * m_expected_edges);
+        result.reserve(m_edge_count);
         for (size_t source = 0; source < m_nodes.size(); ++source) {
             for (const edge_info& edge : m_nodes[source].outgoing) {
                 result[{source, edge.destination}] = fn(source, edge.destination);
@@ -75,12 +76,14 @@ class graph {
 
   private:
     struct node {
-        std::vector<edge_info> incoming;
-        std::vector<edge_info> outgoing;
+        node(const local_linear_allocator<edge_info>& alloc) : incoming(alloc), outgoing(alloc) {}
+        std::deque<edge_info, local_linear_allocator<edge_info>> incoming;
+        std::deque<edge_info, local_linear_allocator<edge_info>> outgoing;
     };
 
-    std::vector<node> m_nodes;
-    size_t m_expected_edges;
+    local_linear_allocator<char> m_pool;
+    std::deque<node, local_linear_allocator<node>> m_nodes;
+    size_t m_edge_count = 0;
 };
 
 } // namespace sssp

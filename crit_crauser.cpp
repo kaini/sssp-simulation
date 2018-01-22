@@ -5,21 +5,16 @@ sssp::crauser_in::crauser_in(const sssp::graph* graph, size_t start_node, bool d
     : criteria(graph, start_node), m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })),
       m_dynamic(dynamic) {}
 
-std::unordered_set<size_t> sssp::crauser_in::relaxable_nodes() const {
-    if (m_distance_queue.empty()) {
-        return {};
-    } else {
-        std::unordered_set<size_t> result;
+void sssp::crauser_in::relaxable_nodes(std::unordered_set<size_t>& output) const {
+    if (!m_distance_queue.empty()) {
         double m = m_distance_queue.top()->tentative_distance;
 
         auto iter = m_threshold_queue.ordered_begin();
         auto end = m_threshold_queue.ordered_end();
         while (iter != end && (*iter)->threshold() <= m) {
-            result.insert((*iter)->index);
+            output.insert((*iter)->index);
             ++iter;
         }
-
-        return result;
     }
 }
 
@@ -65,7 +60,7 @@ bool sssp::crauser_in::node_info_compare_threshold::operator()(const node_info* 
 }
 
 sssp::crauser_in::node_info::node_info(const sssp::graph& g, size_t index)
-    : index(index), incoming(g.incoming_edges(index)) {
+    : index(index), incoming(g.incoming_edges(index).begin(), g.incoming_edges(index).end()) {
     std::sort(incoming.begin(), incoming.end(), [](const auto& a, const auto& b) { return a.cost > b.cost; });
 }
 
@@ -81,21 +76,16 @@ sssp::crauser_out::crauser_out(const sssp::graph* graph, size_t start_node, bool
     : criteria(graph, start_node), m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })),
       m_dynamic(dynamic) {}
 
-std::unordered_set<size_t> sssp::crauser_out::relaxable_nodes() const {
-    if (m_distance_queue.empty()) {
-        return {};
-    } else {
-        std::unordered_set<size_t> result;
+void sssp::crauser_out::relaxable_nodes(std::unordered_set<size_t>& output) const {
+    if (!m_distance_queue.empty()) {
         double l = m_threshold_queue.top()->threshold();
 
         auto iter = m_distance_queue.ordered_begin();
         auto end = m_distance_queue.ordered_end();
         while (iter != end && (*iter)->tentative_distance <= l) {
-            result.emplace((*iter)->index);
+            output.insert((*iter)->index);
             ++iter;
         }
-
-        return result;
     }
 }
 
@@ -141,7 +131,7 @@ bool sssp::crauser_out::node_info_compare_threshold::operator()(const node_info*
 }
 
 sssp::crauser_out::node_info::node_info(const sssp::graph& g, size_t index)
-    : index(index), outgoing(g.outgoing_edges(index)) {
+    : index(index), outgoing(g.outgoing_edges(index).begin(), g.outgoing_edges(index).end()) {
     std::sort(outgoing.begin(), outgoing.end(), [](const auto& a, const auto& b) { return a.cost > b.cost; });
 }
 

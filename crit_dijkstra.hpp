@@ -7,7 +7,7 @@ namespace sssp {
 class smallest_tentative_distance : public criteria {
   public:
     smallest_tentative_distance(const sssp::graph* graph, size_t start_node);
-    virtual std::unordered_set<size_t> relaxable_nodes() const override;
+    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const override;
     virtual void changed_predecessor(size_t node, size_t predecessor, double distance) override;
     virtual void relaxed_node(size_t node) override;
 

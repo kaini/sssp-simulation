@@ -13,7 +13,7 @@ using relaxation_heuristic = std::function<double(size_t node)>;
 class heuristic : public criteria {
   public:
     heuristic(const sssp::graph* graph, size_t start_node, relaxation_heuristic heuristic);
-    virtual std::unordered_set<size_t> relaxable_nodes() const override;
+    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const override;
     virtual void changed_predecessor(size_t node, size_t predecessor, double distance) override;
     virtual void relaxed_node(size_t node) override;
 

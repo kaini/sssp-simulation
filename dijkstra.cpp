@@ -14,12 +14,13 @@ sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<cri
         crit.changed_predecessor(start_node, size_t(-1), 0.0);
     }
 
+    std::unordered_set<size_t> todo;
+    todo.reserve(graph.node_count());
     while (true) {
         // Find nodes to be relaxed.
-        std::unordered_set<size_t> todo;
+        todo.clear();
         for (auto& crit : criteria) {
-            auto nodes = crit.relaxable_nodes();
-            todo.insert(nodes.begin(), nodes.end());
+            crit.relaxable_nodes(todo);
         }
 
         // If there is nothing more to do, we are done.

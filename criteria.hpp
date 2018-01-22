@@ -11,7 +11,7 @@ class criteria {
     virtual ~criteria() = default;
 
     // Called at the start of each relaxation phase to find nodes to relax.
-    virtual std::unordered_set<size_t> relaxable_nodes() const = 0;
+    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const = 0;
 
     // Called when a node in the fringe or unexplored set gets a better predecessor
     // assigned. Called before the respective relaxed_node.

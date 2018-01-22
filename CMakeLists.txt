@@ -86,6 +86,7 @@ set (HEADERS
 	generate_edges.hpp
 	generate_positions.hpp
 	graph.hpp
+	linear_allocator.hpp
 	math.hpp
 	partial_shuffle.hpp
 	stringy_enum.hpp

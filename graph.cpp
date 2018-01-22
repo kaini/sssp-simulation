@@ -2,15 +2,11 @@
 #include <algorithm>
 #include <boost/assert.hpp>
 
-sssp::graph::graph(size_t expected_nodes, size_t expected_edges_per_node) : m_expected_edges(expected_edges_per_node) {
-    m_nodes.reserve(expected_nodes);
-}
+sssp::graph::graph() : m_pool(8 * 1024 * 1024), m_nodes(m_pool) {}
 
 size_t sssp::graph::add_node() {
     size_t index = m_nodes.size();
-    m_nodes.emplace_back();
-    m_nodes.back().incoming.reserve(m_expected_edges);
-    m_nodes.back().outgoing.reserve(m_expected_edges);
+    m_nodes.push_back(node(m_pool));
     return index;
 }
 
@@ -25,18 +21,21 @@ void sssp::graph::add_edge(size_t source, size_t destination, double cost) {
                  m_nodes[destination].incoming.end());
     BOOST_ASSERT(source != destination);
     BOOST_ASSERT(cost >= 0.0);
-    m_nodes[source].outgoing.emplace_back(edge_info(source, destination, cost));
-    m_nodes[destination].incoming.emplace_back(edge_info(source, destination, cost));
+    m_nodes[source].outgoing.push_back(edge_info(source, destination, cost));
+    m_nodes[destination].incoming.push_back(edge_info(source, destination, cost));
+    m_edge_count += 1;
 }
 
 size_t sssp::graph::node_count() const {
     return m_nodes.size();
 }
 
-const std::vector<sssp::edge_info>& sssp::graph::outgoing_edges(size_t source) const {
+const std::deque<sssp::edge_info, sssp::local_linear_allocator<sssp::edge_info>>&
+sssp::graph::outgoing_edges(size_t source) const {
     return m_nodes[source].outgoing;
 }
 
-const std::vector<sssp::edge_info>& sssp::graph::incoming_edges(size_t destination) const {
+const std::deque<sssp::edge_info, sssp::local_linear_allocator<sssp::edge_info>>&
+sssp::graph::incoming_edges(size_t destination) const {
     return m_nodes[destination].incoming;
 }

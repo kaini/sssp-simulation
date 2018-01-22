@@ -67,7 +67,7 @@ void run(const sssp::arguments& args, int run_number) {
             return;
     }
 
-    graph graph(positions.size(), static_cast<size_t>(positions.size() * args.edge_gen.uniform.probability) * 2);
+    graph graph;
     for (size_t i = 0; i < positions.size(); ++i) {
         graph.add_node();
     }
