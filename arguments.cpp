@@ -99,8 +99,10 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
             "Set the SSSP algorithm. This argument can be passed multiple times to combine criteria. Possible values:\n  - dijkstra: \tDijkstra's algorithm\n  - crauser_in: \tCrauser et al. using the IN criteria.\n  - crauser_in_dyn: \tCrauser et al. using the IN criteria only looking at nodes not settled.\n  - crauser_out: \tCrauser et al. using the OUT criteria.\n  - crauser_out_dyn: \tCrauser et al. using the OUT criteria only looking at nodes not settled.\n  - oracle: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.\n  - heuristic: \tUses a heuristic to decide which nodes can be relaxed. The graph has to be euclidean.")
         ("runs,r", po::value(&args.runs)->default_value(args.runs),
             "Set the number of runs. (> 0)")
+#ifndef DISABLE_CAIRO
         ("image,i", po::value(&args.image)->default_value(""),
             "If set to a filename, output an image (PDF-file) displaying the graph and visualizing the algorithm.")
+#endif
         ;
     all_opts.add(pos_opts);
     all_opts.add(edge_opts);

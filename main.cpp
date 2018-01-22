@@ -4,18 +4,21 @@
 #include "crit_heuristic.hpp"
 #include "crit_oracle.hpp"
 #include "dijkstra.hpp"
-#include "draw_graph.hpp"
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
 #include "graph.hpp"
 #include "math.hpp"
 #include <boost/assert.hpp>
 #include <boost/date_time.hpp>
-#include <cairomm/cairomm.h>
 #include <iostream>
 #include <mutex>
 #include <random>
 #include <tbb/parallel_for.h>
+
+#ifndef DISABLE_CAIRO
+#include "draw_graph.hpp"
+#include <cairomm/cairomm.h>
+#endif
 
 namespace {
 
@@ -153,6 +156,7 @@ void run(const sssp::arguments& args, int run_number) {
                   << output_line(run_number, seed, graph.node_count(), reachable_count, max_relaxation_phase + 1)
                   << "\n";
 
+#ifndef DISABLE_CAIRO
         if (args.image.size() > 0) {
             node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
                 node_style style;
@@ -193,6 +197,7 @@ void run(const sssp::arguments& args, int run_number) {
                 std::cerr << "Could not write file " << args.image << ": " << ex.what() << "\n";
             }
         }
+#endif
     }
 }
 

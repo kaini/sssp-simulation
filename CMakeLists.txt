@@ -3,45 +3,76 @@ cmake_minimum_required (VERSION 3.5)
 # Project setup
 ###############
 project (sssp-simulation)
+include (FindPkgConfig)
 enable_testing ()
+
+option (DISABLE_CAIRO "disables the image output feature and therefore does not need Cairo anymore" OFF)
 
 # Compiler setup
 ################
-# Try to find the host architecture. This is only used for some path hints on
-# Linux and it does not matter if it fails.
-if (MSVC)
-	set (${C_ARCH} "c_arch_not_set_when_using_msvc")
-else ()
-	execute_process (COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE C_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif ()
-
 set (CMAKE_CXX_STANDARD 14)
 # TODO With cmake 3.10+ this if can be removed.
 if (MSVC)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++14")
+	add_definitions (-D_USE_MATH_DEFINES)
+endif ()
+
+if (${DISABLE_CAIRO})
+	add_definitions (-DDISABLE_CAIRO)
 endif ()
 
 # Find external libraries
 #########################
-find_package (Boost REQUIRED date_time program_options unit_test_framework REQUIRED)
+add_library (freetype INTERFACE)
+if (PKG_CONFIG_FOUND)
+	pkg_search_module (Freetype_HINTS freetype2)
+endif ()
+find_path (Freetype_INCLUDE_DIR ft2build.h HINTS ${Freetype_HINTS_INCLUDE_DIRS})
+target_include_directories (freetype INTERFACE ${Freetype_INCLUDE_DIR})
 
-find_path (Cairo_INCLUDE_DIRS cairo.h HINTS /usr/include/cairo /usr/local/include/cairo)
-find_library (Cairo_LIBRARIES cairo)
+add_library (cairo INTERFACE)
+find_path (Cairo_INCLUDE_DIR cairo.h PATH_SUFFIXES cairo)
+target_include_directories (cairo INTERFACE ${Cairo_INCLUDE_DIR})
+find_library (Cairo_LIBRARY cairo)
+target_link_libraries (cairo INTERFACE ${Cairo_LIBRARY} freetype)
 
-find_path (Freetype_INCLUDE_DIRS ft2build.h HINTS /usr/include/freetype2 /usr/local/include/freetype2)
+add_library (sigc++ INTERFACE)
+if (PKG_CONFIG_FOUND)
+	pkg_search_module (Sigc++_HINTS sigc++-2.0)
+endif ()
+find_path (Sigc++_INCLUDE_DIR sigc++/sigc++.h HINTS ${Sigc++_HINTS_INCLUDE_DIRS})
+find_path (Sigc++_Config_INCLUDE_DIR sigc++config.h HINTS ${Sigc++_HINTS_INCLUDE_DIRS})
+target_include_directories (sigc++ INTERFACE ${Sigc++_HINTS_INCLUDE_DIRS} ${Sigc++_HINTS_INCLUDE_DIRS})
 
-find_path (Sigcpp_INCLUDE_DIR_1 sigc++/sigc++.h HINTS /usr/include/sigc++-2.0 /usr/local/include/sigc++-2.0)
-find_path (Sigcpp_INCLUDE_DIR_2 sigc++config.h HINTS /usr/lib/${C_ARCH}/sigc++-2.0/include /usr/local/lib/sigc++-2.0/include)
-set (Sigcpp_INCLUDE_DIRS "${Sigcpp_INCLUDE_DIR_1}" "${Sigcpp_INCLUDE_DIR_2}")
+add_library (cairomm INTERFACE)
+if (PKG_CONFIG_FOUND)
+	pkg_search_module (Cairomm_HINTS cairomm-1.0)
+endif ()
+find_path (Cairomm_INCLUDE_DIR cairomm/cairomm.h HINTS ${Cairomm_HINTS_INCLUDE_DIRS})
+find_path (Cairomm_Config_INCLUDE_DIR cairommconfig.h HINTS ${Cairomm_HINTS_INCLUDE_DIRS})
+target_include_directories (cairomm INTERFACE ${Cairomm_INCLUDE_DIR} ${Cairomm_Config_INCLUDE_DIR})
+find_library (Cairomm_LIBRARY cairomm-1.0 HINTS ${Cairomm_HINTS_LIBRARY_DIRS})
+target_link_libraries (cairomm INTERFACE ${Cairomm_LIBRARY} cairo sigc++)
 
-find_path (Cairomm_INCLUDE_DIR_1 cairomm/cairomm.h HINTS /usr/include/cairomm-1.0 /usr/local/include/cairomm-1.0)
-find_path (Cairomm_INCLUDE_DIR_2 cairommconfig.h HINTS /usr/lib/${C_ARCH}/cairomm-1.0/include /usr/local/lib/cairomm-1.0/include)
-set (Cairomm_INCLUDE_DIRS "${Cairomm_INCLUDE_DIR_1}" "${Cairomm_INCLUDE_DIR_2}")
-find_library (Cairomm_LIBRARIES cairomm-1.0 NAMES cairomm-1 cairomm)
+add_library (boost INTERFACE)
+find_package (Boost REQUIRED COMPONENTS date_time program_options unit_test_framework)
+target_include_directories (boost INTERFACE ${Boost_INCLUDE_DIRS})
+target_link_libraries (boost INTERFACE ${Boost_LIBRARIES})
+target_compile_definitions (boost INTERFACE -DBOOST_TEST_DYN_LINK)
 
+add_library (tbb INTERFACE)
 find_path (Tbb_INCLUDE_DIR tbb/parallel_for.h)
-find_library (Tbb_LIBRARIES_Debug tbb_debug)
-find_library (Tbb_LIBRARIES tbb)
+target_include_directories (tbb INTERFACE ${Tbb_INCLUDE_DIR})
+find_library (Tbb_LIBRARY tbb)
+if (MSVC)
+	find_library (Tbb_Debug_LIBRARY tbb_debug)
+else ()
+	set (Tbb_Debug_LIBRARY ${Tbb_LIBRARY})
+endif ()
+target_link_libraries (tbb
+	INTERFACE optimized ${Tbb_LIBRARY}
+	INTERFACE debug ${Tbb_Debug_LIBRARY}
+)
 
 # sssp-simulation library
 #########################
@@ -53,7 +84,6 @@ set (HEADERS
 	crit_oracle.hpp
 	criteria.hpp
 	dijkstra.hpp
-	draw_graph.hpp
 	generate_edges.hpp
 	generate_positions.hpp
 	graph.hpp
@@ -68,28 +98,26 @@ set (SOURCES
 	crit_heuristic.cpp
 	crit_oracle.cpp
 	dijkstra.cpp
-	draw_graph.cpp
 	generate_edges.cpp
 	generate_positions.cpp
 	graph.cpp
 	math.cpp
 )
-add_library (sssp STATIC ${HEADERS} ${SOURCES})
-target_compile_definitions (sssp PUBLIC -D_USE_MATH_DEFINES)
-target_include_directories (sssp PUBLIC ${Boost_INCLUDE_DIRS} ${Cairo_INCLUDE_DIRS} ${Freetype_INCLUDE_DIRS} ${Sigcpp_INCLUDE_DIRS} ${Cairomm_INCLUDE_DIRS} ${Tbb_INCLUDE_DIR})
-target_include_directories (sssp INTERFACE .)
-target_link_libraries (sssp PUBLIC ${Boost_LIBRARIES} ${Cairo_LIBRARIES} ${Cairomm_LIBRARIES})
-if (MSVC)
-	target_link_libraries (sssp PUBLIC optimized ${Tbb_LIBRARIES})
-	target_link_libraries (sssp PUBLIC debug ${Tbb_LIBRARIES_Debug})
-else ()
-	target_link_libraries (sssp PUBLIC ${Tbb_LIBRARIES})
+if (NOT ${DISABLE_CAIRO})
+	list (APPEND HEADERS draw_graph.hpp)
+	list (APPEND SOURCES draw_graph.cpp)
 endif ()
+add_library (sssp STATIC ${HEADERS} ${SOURCES})
+target_link_libraries (sssp PUBLIC boost tbb)
+if (NOT ${DISABLE_CAIRO})
+	target_link_libraries (sssp PUBLIC cairomm)
+endif ()
+target_include_directories (sssp INTERFACE .)
 
 # sssp-simulation executable
 ############################
 add_executable (sssp-simulation main.cpp)
-target_link_libraries (sssp-simulation sssp)
+target_link_libraries (sssp-simulation PRIVATE sssp)
 
 # tests executable
 ##################
@@ -105,6 +133,5 @@ set (TESTS_SOURCES
 	tests/test_graph.cpp
 )
 add_executable (tests ${TESTS_SOURCES} ${TEST_HEADERS})
-target_compile_definitions (tests PUBLIC -DBOOST_TEST_DYN_LINK)
-target_link_libraries (tests sssp)
+target_link_libraries (tests PRIVATE sssp)
 add_test (sssp-tests tests)

@@ -100,7 +100,9 @@ struct arguments {
     int seed = 42;
     std::vector<sssp_algorithm> algorithms = {sssp_algorithm::dijkstra};
     positive_int runs = 1;
+#ifndef DISABLE_CAIRO
     std::string image = "";
+#endif
 };
 
 extern const std::string arguments_csv_header;
