@@ -51,7 +51,7 @@ find_library (Cairomm_LIBRARY cairomm-1.0 HINTS ${Cairomm_HINTS_LIBRARY_DIRS})
 target_link_libraries (cairomm INTERFACE ${Cairomm_LIBRARY} cairo sigc++)
 
 add_library (boost INTERFACE)
-find_package (Boost 1.65.0 REQUIRED COMPONENTS date_time program_options unit_test_framework)
+find_package (Boost 1.65.0 REQUIRED COMPONENTS date_time program_options unit_test_framework timer system chrono)
 target_include_directories (boost INTERFACE ${Boost_INCLUDE_DIRS})
 target_link_libraries (boost INTERFACE ${Boost_LIBRARIES})
 target_compile_definitions (boost INTERFACE -DBOOST_TEST_DYN_LINK)

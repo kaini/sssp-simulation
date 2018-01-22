@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/functional/hash.hpp>
+#include <cstdint>
 #include <unordered_map>
 #include <vector>
 
@@ -35,7 +36,7 @@ template <typename T> using edge_map = std::unordered_map<edge_id, T>;
 class graph {
   public:
     // Empty graph.
-    graph();
+    graph(size_t expected_nodes = 0, size_t expected_edges_per_node = 0);
 
     // Add a new node without edges.
     size_t add_node();
@@ -63,6 +64,7 @@ class graph {
     // Creates a pre-filled edge map by calling the callback.
     template <typename Fun> auto make_edge_map(Fun fn) const -> edge_map<decltype(fn(0, 0))> {
         edge_map<decltype(fn(0, 0))> result;
+        result.reserve(m_nodes.size() * m_expected_edges);
         for (size_t source = 0; source < m_nodes.size(); ++source) {
             for (const edge_info& edge : m_nodes[source].outgoing) {
                 result[{source, edge.destination}] = fn(source, edge.destination);
@@ -78,6 +80,7 @@ class graph {
     };
 
     std::vector<node> m_nodes;
+    size_t m_expected_edges;
 };
 
 } // namespace sssp

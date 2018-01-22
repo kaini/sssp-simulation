@@ -2,11 +2,15 @@
 #include <algorithm>
 #include <boost/assert.hpp>
 
-sssp::graph::graph() {}
+sssp::graph::graph(size_t expected_nodes, size_t expected_edges_per_node) : m_expected_edges(expected_edges_per_node) {
+    m_nodes.reserve(expected_nodes);
+}
 
 size_t sssp::graph::add_node() {
     size_t index = m_nodes.size();
     m_nodes.emplace_back();
+    m_nodes.back().incoming.reserve(m_expected_edges);
+    m_nodes.back().outgoing.reserve(m_expected_edges);
     return index;
 }
 
