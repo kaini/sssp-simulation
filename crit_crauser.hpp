@@ -13,7 +13,7 @@ namespace sssp {
 class crauser_in : public criteria {
   public:
     crauser_in(const sssp::graph* graph, size_t start_node, bool dynamic);
-    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const override;
+    virtual void relaxable_nodes(todo_output& output) const override;
     virtual void changed_predecessor(size_t node, size_t predecessor, double distance) override;
     virtual void relaxed_node(size_t node) override;
     bool dynamic() const { return m_dynamic; }
@@ -55,7 +55,7 @@ class crauser_in : public criteria {
 class crauser_out : public criteria {
   public:
     crauser_out(const sssp::graph* graph, size_t start_node, bool dynamic);
-    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const override;
+    virtual void relaxable_nodes(todo_output& output) const override;
     virtual void changed_predecessor(size_t node, size_t predecessor, double distance) override;
     virtual void relaxed_node(size_t node) override;
     bool dynamic() const { return m_dynamic; }

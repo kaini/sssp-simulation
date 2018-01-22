@@ -1,5 +1,6 @@
 #pragma once
 #include "criteria.hpp"
+#include "linear_allocator.hpp"
 #include <boost/heap/pairing_heap.hpp>
 
 namespace sssp {
@@ -7,7 +8,7 @@ namespace sssp {
 class smallest_tentative_distance : public criteria {
   public:
     smallest_tentative_distance(const sssp::graph* graph, size_t start_node);
-    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const override;
+    virtual void relaxable_nodes(todo_output& output) const override;
     virtual void changed_predecessor(size_t node, size_t predecessor, double distance) override;
     virtual void relaxed_node(size_t node) override;
 
@@ -18,7 +19,9 @@ class smallest_tentative_distance : public criteria {
         bool operator()(const node_info* a, const node_info* b) const;
     };
 
-    using queue = boost::heap::pairing_heap<node_info*, boost::heap::compare<node_info_compare>>;
+    using queue = boost::heap::pairing_heap<node_info*,
+                                            boost::heap::compare<node_info_compare>,
+                                            boost::heap::allocator<local_linear_allocator<node_info*>>>;
 
     struct node_info {
         node_info(size_t index) : index(index) {}

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <boost/assert.hpp>
 
-sssp::graph::graph() : m_pool(8 * 1024 * 1024), m_nodes(m_pool) {}
+sssp::graph::graph() : m_pool(default_chunk_size), m_nodes(m_pool) {}
 
 size_t sssp::graph::add_node() {
     size_t index = m_nodes.size();

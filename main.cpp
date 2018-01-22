@@ -138,6 +138,7 @@ void run(const sssp::arguments& args, int run_number) {
                 break;
         }
     }
+
     node_map<dijkstra_result> result = dijkstra(graph, start_node, criteria);
 
     int max_relaxation_phase =

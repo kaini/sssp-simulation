@@ -5,14 +5,14 @@ sssp::crauser_in::crauser_in(const sssp::graph* graph, size_t start_node, bool d
     : criteria(graph, start_node), m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })),
       m_dynamic(dynamic) {}
 
-void sssp::crauser_in::relaxable_nodes(std::unordered_set<size_t>& output) const {
+void sssp::crauser_in::relaxable_nodes(todo_output& output) const {
     if (!m_distance_queue.empty()) {
         double m = m_distance_queue.top()->tentative_distance;
 
         auto iter = m_threshold_queue.ordered_begin();
         auto end = m_threshold_queue.ordered_end();
         while (iter != end && (*iter)->threshold() <= m) {
-            output.insert((*iter)->index);
+            output.push_back((*iter)->index);
             ++iter;
         }
     }
@@ -76,14 +76,14 @@ sssp::crauser_out::crauser_out(const sssp::graph* graph, size_t start_node, bool
     : criteria(graph, start_node), m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })),
       m_dynamic(dynamic) {}
 
-void sssp::crauser_out::relaxable_nodes(std::unordered_set<size_t>& output) const {
+void sssp::crauser_out::relaxable_nodes(todo_output& output) const {
     if (!m_distance_queue.empty()) {
         double l = m_threshold_queue.top()->threshold();
 
         auto iter = m_distance_queue.ordered_begin();
         auto end = m_distance_queue.ordered_end();
         while (iter != end && (*iter)->tentative_distance <= l) {
-            output.insert((*iter)->index);
+            output.push_back((*iter)->index);
             ++iter;
         }
     }

@@ -8,10 +8,10 @@ sssp::oracle::oracle(const sssp::graph* graph, size_t start_node) : criteria(gra
     m_result = dijkstra(*graph, start_node, cs);
 }
 
-void sssp::oracle::relaxable_nodes(std::unordered_set<size_t>& output) const {
+void sssp::oracle::relaxable_nodes(todo_output& output) const {
     for (auto node : m_fringe) {
         if (std::abs(m_result[node.first].distance - node.second) <= DBL_EPSILON) {
-            output.insert(node.first);
+            output.push_back(node.first);
         }
     }
 }

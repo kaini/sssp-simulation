@@ -1,9 +1,12 @@
 #pragma once
 #include <boost/assert.hpp>
+#include <cstddef>
 #include <memory>
 #include <vector>
 
 namespace sssp {
+
+static constexpr size_t default_chunk_size = 8 * 1024 * 1024;
 
 struct local_linear_allocator_control_block {
     local_linear_allocator_control_block(size_t chunk_size) : chunk_size(chunk_size) {}
@@ -17,12 +20,23 @@ struct local_linear_allocator_control_block {
 // allocator is destructed.
 template <typename T> class local_linear_allocator {
   public:
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using void_pointer = void*;
+    using const_void_pointer = const void*;
     using value_type = T;
+    using size_type = size_t;
+    using difference_type = ptrdiff_t;
+    using propagate_on_container_copy_assignment = std::true_type;
+    using propagate_on_container_move_assignment = std::true_type;
+    using propagate_on_container_swap = std::true_type;
 
     template <typename OtherT> friend class local_linear_allocator;
 
     // ctor
-    local_linear_allocator(size_t chunk_size)
+    local_linear_allocator(size_t chunk_size = default_chunk_size)
         : m_c(std::make_shared<local_linear_allocator_control_block>(chunk_size)) {}
 
     // rebind conversion
@@ -32,15 +46,11 @@ template <typename T> class local_linear_allocator {
     local_linear_allocator(const local_linear_allocator<T>& other) : m_c(other.m_c) {}
     local_linear_allocator(const local_linear_allocator<T>&& other) : m_c(other.m_c) {}
     local_linear_allocator<T>& operator=(const local_linear_allocator<T>& other) {
-        if (*other != this) {
-            m_c = other.m_c;
-        }
+        m_c = other.m_c;
         return *this;
     }
     local_linear_allocator<T>& operator=(const local_linear_allocator<T>&& other) {
-        if (*other != this) {
-            m_c = other.m_c;
-        }
+        m_c = other.m_c;
         return *this;
     }
 

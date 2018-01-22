@@ -1,17 +1,19 @@
 #pragma once
 #include "graph.hpp"
-#include <unordered_set>
+#include <vector>
 
 namespace sssp {
 
 class criteria {
   public:
+    using todo_output = std::vector<size_t>;
+
     criteria(const graph* graph, size_t start_node) : m_graph(graph), m_start_node(start_node) {}
 
     virtual ~criteria() = default;
 
     // Called at the start of each relaxation phase to find nodes to relax.
-    virtual void relaxable_nodes(std::unordered_set<size_t>& output) const = 0;
+    virtual void relaxable_nodes(todo_output& output) const = 0;
 
     // Called when a node in the fringe or unexplored set gets a better predecessor
     // assigned. Called before the respective relaxed_node.

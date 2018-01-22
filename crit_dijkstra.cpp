@@ -3,9 +3,9 @@
 sssp::smallest_tentative_distance::smallest_tentative_distance(const sssp::graph* graph, size_t start_node)
     : criteria(graph, start_node), m_node_info(graph->make_node_map([](size_t i) { return node_info(i); })) {}
 
-void sssp::smallest_tentative_distance::relaxable_nodes(std::unordered_set<size_t>& output) const {
+void sssp::smallest_tentative_distance::relaxable_nodes(todo_output& output) const {
     if (!m_queue.empty()) {
-        output.insert(m_queue.top()->index);
+        output.push_back(m_queue.top()->index);
     }
 }
 
