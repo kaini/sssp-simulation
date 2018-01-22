@@ -1,6 +1,7 @@
 #pragma once
 #include "criteria.hpp"
 #include "dijkstra.hpp"
+#include "linear_allocator.hpp"
 #include <cstdlib>
 #include <unordered_map>
 
@@ -16,7 +17,12 @@ class oracle : public criteria {
 
   private:
     node_map<dijkstra_result> m_result;
-    std::unordered_map<size_t, double> m_fringe;
+    std::unordered_map<size_t,
+                       double,
+                       std::hash<size_t>,
+                       std::equal_to<size_t>,
+                       local_linear_allocator<std::pair<const size_t, double>>>
+        m_fringe;
 };
 
 } // namespace sssp

@@ -13,7 +13,7 @@ option (DISABLE_CAIRO "disables the image output feature and therefore does not 
 set (CMAKE_CXX_STANDARD 14)
 # TODO With cmake 3.10+ this if can be removed.
 if (MSVC)
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++14")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++${CMAKE_CXX_STANDARD}")
 	add_definitions (-D_USE_MATH_DEFINES)
 endif ()
 
@@ -89,6 +89,7 @@ set (HEADERS
 	linear_allocator.hpp
 	math.hpp
 	partial_shuffle.hpp
+	priority_queue.hpp
 	stringy_enum.hpp
 )
 set (SOURCES

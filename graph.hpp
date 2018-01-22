@@ -23,11 +23,27 @@ struct edge_id {
 };
 
 inline bool operator==(const edge_id& a, const edge_id& b) {
-    return a.source == b.source && a.destination == b.destination;
+    return std::tie(a.source, a.destination) == std::tie(b.source, b.destination);
 }
 
 inline bool operator!=(const edge_id& a, const edge_id& b) {
-    return !(a == b);
+    return std::tie(a.source, a.destination) != std::tie(b.source, b.destination);
+}
+
+inline bool operator<(const edge_id& a, const edge_id& b) {
+    return std::tie(a.source, a.destination) < std::tie(b.source, b.destination);
+}
+
+inline bool operator<=(const edge_id& a, const edge_id& b) {
+    return std::tie(a.source, a.destination) <= std::tie(b.source, b.destination);
+}
+
+inline bool operator>(const edge_id& a, const edge_id& b) {
+    return std::tie(a.source, a.destination) > std::tie(b.source, b.destination);
+}
+
+inline bool operator>=(const edge_id& a, const edge_id& b) {
+    return std::tie(a.source, a.destination) >= std::tie(b.source, b.destination);
 }
 
 template <typename T> using edge_map = std::unordered_map<edge_id, T>;
@@ -53,7 +69,7 @@ class graph {
     const std::deque<edge_info, local_linear_allocator<edge_info>>& incoming_edges(size_t destination) const;
 
     // Creates a pre-filled node map by calling the callback.
-    template <typename Fun> auto make_node_map(Fun fn) const -> node_map<decltype(fn(0))> {
+    template <typename Fun> auto make_node_map(const Fun&& fn) const -> node_map<decltype(fn(0))> {
         node_map<decltype(fn(0))> result;
         result.reserve(m_nodes.size());
         for (size_t i = 0; i < m_nodes.size(); ++i) {
@@ -63,7 +79,7 @@ class graph {
     }
 
     // Creates a pre-filled edge map by calling the callback.
-    template <typename Fun> auto make_edge_map(Fun fn) const -> edge_map<decltype(fn(0, 0))> {
+    template <typename Fun> auto make_edge_map(const Fun&& fn) const -> edge_map<decltype(fn(0, 0))> {
         edge_map<decltype(fn(0, 0))> result;
         result.reserve(m_edge_count);
         for (size_t source = 0; source < m_nodes.size(); ++source) {

@@ -13,14 +13,14 @@ using edge_cost_fn = std::function<double(const line&)>;
 void generate_planar_edges(int seed,
                            double max_edge_length,
                            double edge_probability,
-                           edge_cost_fn edge_cost,
+                           const edge_cost_fn& edge_cost,
                            graph& graph,
                            const node_map<vec2>& positions);
 
 // Generates uniformly random edges. The positions are irrelevant and only used for the cost callback.
 void generate_uniform_edges(int seed,
                             double edge_probability,
-                            edge_cost_fn edge_cost,
+                            const edge_cost_fn& edge_cost,
                             graph& graph,
                             const node_map<vec2>& positions);
 

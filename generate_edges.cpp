@@ -6,7 +6,7 @@
 void sssp::generate_planar_edges(int seed,
                                  double max_edge_length,
                                  double edge_probability,
-                                 edge_cost_fn edge_cost,
+                                 const edge_cost_fn& edge_cost,
                                  graph& graph,
                                  const node_map<vec2>& positions) {
     std::mt19937 rng(seed);
@@ -40,7 +40,7 @@ void sssp::generate_planar_edges(int seed,
 
 void sssp::generate_uniform_edges(int seed,
                                   double edge_probability,
-                                  edge_cost_fn edge_cost,
+                                  const edge_cost_fn& edge_cost,
                                   graph& graph,
                                   const node_map<vec2>& positions) {
     std::mt19937 rng(seed);

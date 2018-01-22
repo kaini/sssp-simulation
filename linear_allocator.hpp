@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/assert.hpp>
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -86,6 +87,8 @@ template <typename T> class local_linear_allocator {
     }
 
     void deallocate(T* ptr, size_t n) const {}
+
+    void destroy(T* ptr) const { ptr->~T(); }
 
     template <typename OtherT> bool operator==(const local_linear_allocator<OtherT>& other) const {
         return m_c == other.m_c;
