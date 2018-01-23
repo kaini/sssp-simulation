@@ -3,6 +3,7 @@
 #include "crit_dijkstra.hpp"
 #include "crit_heuristic.hpp"
 #include "crit_oracle.hpp"
+#include "crit_traff_bridge.hpp"
 #include "dijkstra.hpp"
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
@@ -132,6 +133,9 @@ void run(const sssp::arguments& args, int run_number) {
                 break;
             case sssp_algorithm::oracle:
                 criteria.insert(oracle(&graph, start_node));
+                break;
+            case sssp_algorithm::traff:
+                criteria.insert(traff_bridge(&graph, start_node));
                 break;
             default:
                 BOOST_ASSERT(false);

@@ -81,6 +81,7 @@ set (HEADERS
 	crit_dijkstra.hpp
 	crit_heuristic.hpp
 	crit_oracle.hpp
+	crit_traff_bridge.hpp
 	criteria.hpp
 	dijkstra.hpp
 	generate_edges.hpp
@@ -98,6 +99,7 @@ set (SOURCES
 	crit_dijkstra.cpp
 	crit_heuristic.cpp
 	crit_oracle.cpp
+	crit_traff_bridge.cpp
 	dijkstra.cpp
 	generate_edges.cpp
 	generate_positions.cpp

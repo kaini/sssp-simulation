@@ -12,7 +12,15 @@ namespace sssp {
 STRINGY_ENUM(position_algorithm, poisson, uniform)
 STRINGY_ENUM(edge_algorithm, planar, uniform)
 STRINGY_ENUM(cost_algorithm, uniform, one, euclidean)
-STRINGY_ENUM(sssp_algorithm, dijkstra, crauser_in, crauser_in_dyn, crauser_out, crauser_out_dyn, oracle, heuristic)
+STRINGY_ENUM(sssp_algorithm,
+             dijkstra,
+             crauser_in,
+             crauser_in_dyn,
+             crauser_out,
+             crauser_out_dyn,
+             oracle,
+             heuristic,
+             traff)
 
 std::ostream& operator<<(std::ostream& out, const std::vector<sssp_algorithm>& algorithms);
 
