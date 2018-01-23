@@ -1,42 +1,23 @@
 #include "generate_edges.hpp"
 #include "partial_shuffle.hpp"
+#include <algorithm>
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/register/point.hpp>
 #include <random>
 #include <unordered_set>
 
-void sssp::generate_planar_edges(int seed,
-                                 double max_edge_length,
-                                 double edge_probability,
-                                 const edge_cost_fn& edge_cost,
-                                 graph& graph,
-                                 const node_map<vec2>& positions) {
-    std::mt19937 rng(seed);
-    std::bernoulli_distribution allow_edge(edge_probability);
+namespace {
 
-    std::vector<line> lines;
+struct indexed_vec2 {
+    indexed_vec2(size_t index, const sssp::vec2& pos) : index(index), x(pos.x), y(pos.y) {}
+    size_t index;
+    double x;
+    double y;
+};
 
-    for (size_t source = 0; source < graph.node_count(); ++source) {
-        for (size_t destination = 0; destination < graph.node_count(); ++destination) {
-            if (destination != source && distance(positions[source], positions[destination]) <= max_edge_length &&
-                allow_edge(rng)) {
-                line this_line(positions[source], positions[destination]);
+} // namespace
 
-                bool does_intersect = false;
-                for (const line& line : lines) {
-                    if (this_line.start != line.start && this_line.end != line.start && this_line.start != line.end &&
-                        this_line.end != line.end && intersects(line, this_line)) {
-                        does_intersect = true;
-                        break;
-                    }
-                }
-
-                if (!does_intersect) {
-                    graph.add_edge(source, destination, edge_cost(this_line));
-                    lines.emplace_back(this_line);
-                }
-            }
-        }
-    }
-}
+BOOST_GEOMETRY_REGISTER_POINT_2D(indexed_vec2, double, boost::geometry::cs::cartesian, x, y)
 
 void sssp::generate_uniform_edges(int seed,
                                   double edge_probability,
@@ -77,4 +58,54 @@ void sssp::generate_uniform_edges(int seed,
         }
     }
 #endif
+}
+
+void sssp::generate_planar_edges(int seed,
+                                 double edge_probability,
+                                 const edge_cost_fn& edge_cost,
+                                 graph& graph,
+                                 const node_map<vec2>& positions) {
+    using namespace boost::geometry;
+
+    std::mt19937 rng(seed);
+    std::binomial_distribution<size_t> edge_count_dist(graph.node_count() - 1, edge_probability);
+
+    index::rtree<indexed_vec2, index::quadratic<16>> points;
+    for (size_t i = 0; i < positions.size(); ++i) {
+        points.insert(indexed_vec2(i, positions[i]));
+    }
+
+    index::rtree<line, index::quadratic<16>> lines;
+    std::vector<indexed_vec2> result;
+
+    for (size_t source = 0; source < graph.node_count(); ++source) {
+        int edge_count = static_cast<int>(edge_count_dist(rng));
+        if (edge_count > 0) {
+            result.clear();
+            // I find the 2 * edge_count closest nodes and pick edge_count random from them.
+            points.query(index::nearest(indexed_vec2(-1, positions[source]), edge_count * 2),
+                         std::back_inserter(result));
+            std::shuffle(result.begin(), result.end(), rng);
+            int done = 0;
+            for (const auto& dest : result) {
+                if (done >= edge_count) {
+                    break;
+                }
+                if (dest.index == source) {
+                    continue;
+                }
+                line candidate(positions[source], positions[dest.index]);
+                auto line_endings_unequal = [&](const line& l) {
+                    return l.start != candidate.start && l.end != candidate.start && l.start != candidate.end &&
+                           l.end != candidate.end;
+                };
+                if (lines.qbegin(index::intersects(candidate) && index::satisfies(line_endings_unequal)) ==
+                    lines.qend()) {
+                    graph.add_edge(source, dest.index, edge_cost(candidate));
+                    lines.insert(candidate);
+                    done += 1;
+                }
+            }
+        }
+    }
 }

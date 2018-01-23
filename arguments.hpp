@@ -93,8 +93,7 @@ struct arguments {
     struct edge_gen {
         edge_algorithm algorithm = edge_algorithm::planar;
         struct planar {
-            positive_double max_length = 0.2;
-            from_zero_to_one_double probability = 0.5;
+            from_zero_to_one_double probability = 0.05;
         } planar;
         struct uniform {
             from_zero_to_one_double probability = 0.05;

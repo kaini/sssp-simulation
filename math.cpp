@@ -1,6 +1,7 @@
 #include "math.hpp"
 #include <cfloat>
 #include <cmath>
+#include <unordered_set>
 
 double sssp::distance(const vec2& a, const vec2& b) {
     double dx = a.x - b.x;

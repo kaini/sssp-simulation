@@ -93,12 +93,7 @@ void run(const sssp::arguments& args, int run_number) {
 
     switch (args.edge_gen.algorithm) {
         case edge_algorithm::planar:
-            generate_planar_edges(edge_seed,
-                                  args.edge_gen.planar.max_length,
-                                  args.edge_gen.planar.probability,
-                                  edge_cost_fn,
-                                  graph,
-                                  positions);
+            generate_planar_edges(edge_seed, args.edge_gen.planar.probability, edge_cost_fn, graph, positions);
             break;
         case edge_algorithm::uniform:
             generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);

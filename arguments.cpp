@@ -6,7 +6,7 @@
 
 extern const std::string
     sssp::arguments_csv_header("position_alg,position_poisson_min_distance,position_poisson_max_reject,"
-                               "position_uniform_count,edge_alg,edge_planar_max_length,"
+                               "position_uniform_count,edge_alg,"
                                "edge_planar_probability,edge_uniform_probability,cost_alg,alg");
 
 template <typename T> static std::string na_if(bool na, const T& value) {
@@ -43,7 +43,6 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
         << ",";
     out << na_if(args.position_gen.algorithm != position_algorithm::uniform, args.position_gen.uniform.count) << ",";
     out << args.edge_gen.algorithm << ",";
-    out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.max_length) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.probability) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform, args.edge_gen.uniform.probability) << ",";
     out << args.cost_gen.algorithm << ",";
@@ -62,7 +61,9 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
     po::options_description pos_opts("Node positions (note that all nodes are always in the area from 0/0 to 1/1)");
     pos_opts.add_options()
         ("position-gen,P", po::value(&args.position_gen.algorithm)->default_value(args.position_gen.algorithm),
-            "Set the generator used to generate node positions. Possible values:\n  - poisson: \tpoisson-disc sampling\n  - uniform: \tuniform sampling")
+            "Set the generator used to generate node positions. Possible values:\n"
+            "  - poisson: \tpoisson-disc sampling\n"
+            "  - uniform: \tuniform sampling")
         ("Ppoisson-min-distance", po::value(&args.position_gen.poisson.min_distance)->default_value(args.position_gen.poisson.min_distance),
             "Set the minimal distance between points. (> 0)")
         ("Ppoisson-max-reject", po::value(&args.position_gen.poisson.max_reject)->default_value(args.position_gen.poisson.max_reject),
@@ -74,9 +75,9 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
     po::options_description edge_opts("Edges");
     edge_opts.add_options()
         ("edge-gen,E", po::value(&args.edge_gen.algorithm)->default_value(args.edge_gen.algorithm),
-            "Set the generator used to generate edges. Possible values:\n  - planar: \tthe graph will be planar\n  - uniform: \trandom edges")
-        ("Eplanar-max-length", po::value(&args.edge_gen.planar.max_length)->default_value(args.edge_gen.planar.max_length),
-            "Set the maximum distance of nodes considered when looking for possible edges to add. (> 0)")
+            "Set the generator used to generate edges. Possible values:\n"
+            "  - planar: \tthe graph will be planar\n"
+            "  - uniform: \trandom edges")
         ("Eplanar-probability", po::value(&args.edge_gen.planar.probability)->default_value(args.edge_gen.planar.probability),
             "Set the probability that a valid edge is added. (>= 0; <= 1)")
         ("Euniform-probability", po::value(&args.edge_gen.uniform.probability)->default_value(args.edge_gen.uniform.probability),
@@ -86,7 +87,10 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
     po::options_description cost_opts("Edge costs");
     cost_opts.add_options()
         ("cost-gen,C", po::value(&args.cost_gen.algorithm)->default_value(args.cost_gen.algorithm),
-            "Set the generator used to generate edge costs. Possible values:\n - uniform: \tthe edge costs are uniformly random between 0 and 1\n - one: \tall edges have cost 1\n - euclidean: \tall edges have their euclidean length as cost")
+            "Set the generator used to generate edge costs. Possible values:\n"
+            "  - uniform: \tthe edge costs are uniformly random between 0 and 1\n"
+            "  - one: \tall edges have cost 1\n"
+            "  - euclidean: \tall edges have their euclidean length as cost")
         ;
 
     po::options_description all_opts("Single Source Shortest Path simulation tool. Global options");

@@ -1,4 +1,9 @@
 #pragma once
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/register/point.hpp>
+#include <boost/geometry/geometries/register/segment.hpp>
+#include <boost/optional.hpp>
+#include <vector>
 
 namespace sssp {
 
@@ -25,6 +30,19 @@ inline bool operator!=(const vec2& a, const vec2& b) {
     return !(a == b);
 }
 
+inline vec2 operator+(const vec2& a, const vec2& b) {
+    return vec2(a.x + b.x, a.y + b.y);
+}
+
+inline vec2 operator-(const vec2& a, const vec2& b) {
+    return vec2(a.x - b.x, a.y - b.y);
+}
+
+inline vec2 normalize(const vec2& v) {
+    double f = std::sqrt(v.x * v.x + v.y * v.y);
+    return vec2(v.x / f, v.y / f);
+}
+
 struct line {
     line(const vec2& start, const vec2& end) : start(start), end(end) {}
     vec2 start;
@@ -35,3 +53,6 @@ double distance(const vec2& a, const vec2& b);
 bool intersects(const line& a, const line& b);
 
 } // namespace sssp
+
+BOOST_GEOMETRY_REGISTER_POINT_2D(sssp::vec2, double, boost::geometry::cs::cartesian, x, y)
+BOOST_GEOMETRY_REGISTER_SEGMENT(sssp::line, sssp::vec2, start, end)
