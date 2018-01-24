@@ -88,6 +88,7 @@ set (HEADERS
 	generate_positions.hpp
 	graph.hpp
 	linear_allocator.hpp
+	local_allocator.hpp
 	math.hpp
 	partial_shuffle.hpp
 	priority_queue.hpp
@@ -104,6 +105,7 @@ set (SOURCES
 	generate_edges.cpp
 	generate_positions.cpp
 	graph.cpp
+	local_allocator.cpp
 	math.cpp
 )
 if (NOT ${DISABLE_CAIRO})
@@ -134,6 +136,7 @@ set (TESTS_SOURCES
 	tests/criteria_test.cpp
 	tests/dijkstra_basic_test.cpp
 	tests/graph_test.cpp
+	tests/local_allocator_test.cpp
 	tests/math_test.cpp
 	tests/test.cpp
 	tests/test_graph.cpp
