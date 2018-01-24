@@ -10,7 +10,7 @@
 namespace sssp {
 
 STRINGY_ENUM(position_algorithm, poisson, uniform)
-STRINGY_ENUM(edge_algorithm, planar, uniform)
+STRINGY_ENUM(edge_algorithm, planar, uniform, layered)
 STRINGY_ENUM(cost_algorithm, uniform, one, euclidean)
 STRINGY_ENUM(sssp_algorithm,
              dijkstra,
@@ -98,6 +98,10 @@ struct arguments {
         struct uniform {
             from_zero_to_one_double probability = 0.05;
         } uniform;
+        struct layered {
+            from_zero_to_one_double probability = 0.10;
+            positive_int count = 2;
+        } layered;
     } edge_gen;
 
     struct cost_gen {

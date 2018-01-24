@@ -4,10 +4,11 @@
 #include <set>
 #include <sstream>
 
-extern const std::string
-    sssp::arguments_csv_header("position_alg,position_poisson_min_distance,position_poisson_max_reject,"
-                               "position_uniform_count,edge_alg,"
-                               "edge_planar_probability,edge_uniform_probability,cost_alg,alg");
+extern const std::string sssp::arguments_csv_header(
+    "position_alg,position_poisson_min_distance,position_poisson_max_reject,position_uniform_count,"
+    "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,"
+    "cost_alg,"
+    "alg");
 
 template <typename T> static std::string na_if(bool na, const T& value) {
     if (na) {
@@ -45,6 +46,8 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     out << args.edge_gen.algorithm << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.probability) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform, args.edge_gen.uniform.probability) << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::layered, args.edge_gen.layered.probability) << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::layered, args.edge_gen.layered.count) << ",";
     out << args.cost_gen.algorithm << ",";
     out << args.algorithms;
 
@@ -77,11 +80,16 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
         ("edge-gen,E", po::value(&args.edge_gen.algorithm)->default_value(args.edge_gen.algorithm),
             "Set the generator used to generate edges. Possible values:\n"
             "  - planar: \tthe graph will be planar\n"
-            "  - uniform: \trandom edges")
+            "  - uniform: \trandom edges\n"
+            "  - layered: \tlayered graph (e.g. bipartite)")
         ("Eplanar-probability", po::value(&args.edge_gen.planar.probability)->default_value(args.edge_gen.planar.probability),
             "Set the probability that a valid edge is added. (>= 0; <= 1)")
         ("Euniform-probability", po::value(&args.edge_gen.uniform.probability)->default_value(args.edge_gen.uniform.probability),
             "Set the probability for each edge to be added. (>= 0; <= 1)")
+        ("Elayered-probability", po::value(&args.edge_gen.layered.probability)->default_value(args.edge_gen.layered.probability),
+            "Set the probability for each edge to be added. (>= 0; <= 1)")
+        ("Elayered-count", po::value(&args.edge_gen.layered.count)->default_value(args.edge_gen.layered.count),
+            "Set the number of layers. A value of 2 generates a bipartite graph. (> 0)")
         ;
 
     po::options_description cost_opts("Edge costs");

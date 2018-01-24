@@ -98,6 +98,14 @@ void run(const sssp::arguments& args, int run_number) {
         case edge_algorithm::uniform:
             generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);
             break;
+        case edge_algorithm::layered:
+            generate_layered_edges(edge_seed,
+                                   args.edge_gen.layered.probability,
+                                   args.edge_gen.layered.count,
+                                   edge_cost_fn,
+                                   graph,
+                                   positions);
+            break;
         default:
             BOOST_ASSERT(false);
             return;

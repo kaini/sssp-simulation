@@ -109,3 +109,42 @@ void sssp::generate_planar_edges(int seed,
         }
     }
 }
+
+static int y_bucket(int layers, double y) {
+    BOOST_ASSERT(layers >= 1);
+    BOOST_ASSERT(0.0 <= y && y <= 1.0);
+    // The std::min is just for the rare case that some y is exactly 1.
+    return std::min(static_cast<int>(std::floor(y * layers)), layers - 1);
+}
+
+void sssp::generate_layered_edges(int seed,
+                                  double edge_probability,
+                                  int layers,
+                                  const edge_cost_fn& edge_cost,
+                                  graph& graph,
+                                  const node_map<vec2>& positions) {
+    std::mt19937 rng(seed);
+
+    std::vector<std::vector<size_t>> buckets(layers);
+    for (size_t n = 0; n < graph.node_count(); ++n) {
+        buckets[y_bucket(layers, positions[n].y)].emplace_back(n);
+    }
+
+    for (size_t source = 0; source < graph.node_count(); ++source) {
+        std::vector<size_t> destinations;
+        int source_bucket = y_bucket(layers, positions[source].y);
+        if (source_bucket > 0) {
+            destinations.insert(
+                destinations.end(), buckets[source_bucket - 1].begin(), buckets[source_bucket - 1].end());
+        }
+        if (source_bucket < layers - 1) {
+            destinations.insert(
+                destinations.end(), buckets[source_bucket + 1].begin(), buckets[source_bucket + 1].end());
+        }
+        size_t edge_count = std::binomial_distribution<size_t>(destinations.size(), edge_probability)(rng);
+        partial_shuffle(destinations.begin(), destinations.begin() + edge_count, destinations.end(), rng);
+        for (size_t i = 0; i < edge_count; ++i) {
+            graph.add_edge(source, destinations[i], edge_cost(line(positions[source], positions[destinations[i]])));
+        }
+    }
+}

@@ -23,4 +23,13 @@ void generate_planar_edges(int seed,
                            graph& graph,
                            const node_map<vec2>& positions);
 
+// Creates graphs that can only be connected like that: 1 <-> 2 <-> 3 ...
+// with 1, 2, 3 ... being the layers.
+void generate_layered_edges(int seed,
+                            double edge_probability,
+                            int layers,
+                            const edge_cost_fn& edge_cost,
+                            graph& graph,
+                            const node_map<vec2>& positions);
+
 } // namespace sssp
