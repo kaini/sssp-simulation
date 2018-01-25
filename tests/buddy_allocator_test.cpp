@@ -1,10 +1,10 @@
-#include "local_allocator.hpp"
+#include "buddy_allocator.hpp"
 #include <boost/test/unit_test.hpp>
 
 using namespace sssp;
 namespace tt = boost::test_tools;
 
-BOOST_AUTO_TEST_CASE(local_allocator_vector_test) {
+BOOST_AUTO_TEST_CASE(buddy_allocator_vector_test) {
     buddy_allocator_memory allocator_memory;
     std::vector<double, buddy_allocator<double>> vector(&allocator_memory);
 

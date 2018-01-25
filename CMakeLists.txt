@@ -77,6 +77,8 @@ target_link_libraries (tbb
 #########################
 set (HEADERS
 	arguments.hpp
+	buddy_allocator.hpp
+	containers.hpp
 	crit_crauser.hpp
 	crit_dijkstra.hpp
 	crit_heuristic.hpp
@@ -88,14 +90,15 @@ set (HEADERS
 	generate_positions.hpp
 	graph.hpp
 	linear_allocator.hpp
-	local_allocator.hpp
 	math.hpp
 	partial_shuffle.hpp
 	priority_queue.hpp
 	stringy_enum.hpp
+	thread_local_allocator.hpp
 )
 set (SOURCES
 	arguments.cpp
+	buddy_allocator.cpp
 	crit_crauser.cpp
 	crit_dijkstra.cpp
 	crit_heuristic.cpp
@@ -105,8 +108,8 @@ set (SOURCES
 	generate_edges.cpp
 	generate_positions.cpp
 	graph.cpp
-	local_allocator.cpp
 	math.cpp
+	thread_local_allocator.cpp
 )
 if (NOT ${DISABLE_CAIRO})
 	list (APPEND HEADERS draw_graph.hpp)
@@ -133,10 +136,10 @@ set (TEST_HEADERS
 	tests/test_graph.hpp
 )
 set (TESTS_SOURCES
+	tests/buddy_allocator_test.cpp
 	tests/criteria_test.cpp
 	tests/dijkstra_basic_test.cpp
 	tests/graph_test.cpp
-	tests/local_allocator_test.cpp
 	tests/math_test.cpp
 	tests/test.cpp
 	tests/test_graph.cpp

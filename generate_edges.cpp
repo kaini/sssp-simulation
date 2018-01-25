@@ -1,4 +1,5 @@
 #include "generate_edges.hpp"
+#include "containers.hpp"
 #include "partial_shuffle.hpp"
 #include <algorithm>
 #include <boost/geometry.hpp>
@@ -70,13 +71,13 @@ void sssp::generate_planar_edges(int seed,
     std::mt19937 rng(seed);
     std::binomial_distribution<size_t> edge_count_dist(graph.node_count() - 1, edge_probability);
 
-    index::rtree<indexed_vec2, index::quadratic<16>> points;
+    tl_rtree<indexed_vec2, index::quadratic<16>> points;
     for (size_t i = 0; i < positions.size(); ++i) {
         points.insert(indexed_vec2(i, positions[i]));
     }
 
-    index::rtree<line, index::quadratic<16>> lines;
-    std::vector<indexed_vec2> result;
+    tl_rtree<line, index::quadratic<16>> lines;
+    tl_vector<indexed_vec2> result;
 
     for (size_t source = 0; source < graph.node_count(); ++source) {
         int edge_count = static_cast<int>(edge_count_dist(rng));
