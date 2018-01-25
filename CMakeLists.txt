@@ -14,21 +14,23 @@ set (CMAKE_CXX_STANDARD 14)
 # TODO With cmake 3.10+ this if can be removed.
 if (MSVC)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++${CMAKE_CXX_STANDARD}")
-	add_definitions (-D_USE_MATH_DEFINES)
+	add_definitions (-D_USE_MATH_DEFINES -D_WIN32_WINNT=0x0A00 -D_SCL_SECURE_NO_WARNINGS)
 endif ()
 
 # Find external libraries
 #########################
+find_package(Threads REQUIRED)
+
 add_library (freetype INTERFACE)
 if (PKG_CONFIG_FOUND)
 	pkg_search_module (Freetype_HINTS freetype2)
 endif ()
 find_path (Freetype_INCLUDE_DIR ft2build.h HINTS ${Freetype_HINTS_INCLUDE_DIRS})
-target_include_directories (freetype INTERFACE ${Freetype_INCLUDE_DIR})
+target_include_directories (freetype SYSTEM INTERFACE ${Freetype_INCLUDE_DIR})
 
 add_library (cairo INTERFACE)
 find_path (Cairo_INCLUDE_DIR cairo.h PATH_SUFFIXES cairo)
-target_include_directories (cairo INTERFACE ${Cairo_INCLUDE_DIR})
+target_include_directories (cairo SYSTEM INTERFACE ${Cairo_INCLUDE_DIR})
 find_library (Cairo_LIBRARY cairo)
 target_link_libraries (cairo INTERFACE ${Cairo_LIBRARY} freetype)
 
@@ -38,7 +40,7 @@ if (PKG_CONFIG_FOUND)
 endif ()
 find_path (Sigc++_INCLUDE_DIR sigc++/sigc++.h HINTS ${Sigc++_HINTS_INCLUDE_DIRS})
 find_path (Sigc++_Config_INCLUDE_DIR sigc++config.h HINTS ${Sigc++_HINTS_INCLUDE_DIRS})
-target_include_directories (sigc++ INTERFACE ${Sigc++_HINTS_INCLUDE_DIRS} ${Sigc++_HINTS_INCLUDE_DIRS})
+target_include_directories (sigc++ SYSTEM INTERFACE ${Sigc++_HINTS_INCLUDE_DIRS} ${Sigc++_HINTS_INCLUDE_DIRS})
 
 add_library (cairomm INTERFACE)
 if (PKG_CONFIG_FOUND)
@@ -46,32 +48,18 @@ if (PKG_CONFIG_FOUND)
 endif ()
 find_path (Cairomm_INCLUDE_DIR cairomm/cairomm.h HINTS ${Cairomm_HINTS_INCLUDE_DIRS})
 find_path (Cairomm_Config_INCLUDE_DIR cairommconfig.h HINTS ${Cairomm_HINTS_INCLUDE_DIRS})
-target_include_directories (cairomm INTERFACE ${Cairomm_INCLUDE_DIR} ${Cairomm_Config_INCLUDE_DIR})
+target_include_directories (cairomm SYSTEM INTERFACE ${Cairomm_INCLUDE_DIR} ${Cairomm_Config_INCLUDE_DIR})
 find_library (Cairomm_LIBRARY cairomm-1.0 HINTS ${Cairomm_HINTS_LIBRARY_DIRS})
 target_link_libraries (cairomm INTERFACE ${Cairomm_LIBRARY} cairo sigc++)
 
 add_library (boost INTERFACE)
-find_package (Boost 1.65.0 REQUIRED COMPONENTS date_time program_options unit_test_framework timer system chrono)
-target_include_directories (boost INTERFACE ${Boost_INCLUDE_DIRS})
+find_package (Boost 1.65.0 REQUIRED COMPONENTS date_time program_options unit_test_framework timer system chrono filesystem)
+target_include_directories (boost SYSTEM INTERFACE ${Boost_INCLUDE_DIRS})
 target_link_libraries (boost INTERFACE ${Boost_LIBRARIES})
 target_compile_definitions (boost INTERFACE -DBOOST_TEST_DYN_LINK)
 if (MSVC)
 	target_compile_definitions (boost INTERFACE -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 endif ()
-
-add_library (tbb INTERFACE)
-find_path (Tbb_INCLUDE_DIR tbb/parallel_for.h)
-target_include_directories (tbb INTERFACE ${Tbb_INCLUDE_DIR})
-find_library (Tbb_LIBRARY tbb)
-if (MSVC)
-	find_library (Tbb_Debug_LIBRARY tbb_debug)
-else ()
-	set (Tbb_Debug_LIBRARY ${Tbb_LIBRARY})
-endif ()
-target_link_libraries (tbb
-	INTERFACE optimized ${Tbb_LIBRARY}
-	INTERFACE debug ${Tbb_Debug_LIBRARY}
-)
 
 # sssp-simulation library
 #########################
@@ -93,6 +81,7 @@ set (HEADERS
 	math.hpp
 	partial_shuffle.hpp
 	priority_queue.hpp
+	run.hpp
 	stringy_enum.hpp
 	thread_local_allocator.hpp
 )
@@ -109,6 +98,7 @@ set (SOURCES
 	generate_positions.cpp
 	graph.cpp
 	math.cpp
+	run.cpp
 	thread_local_allocator.cpp
 )
 if (NOT ${DISABLE_CAIRO})
@@ -119,7 +109,7 @@ add_library (sssp STATIC ${HEADERS} ${SOURCES})
 if (${DISABLE_CAIRO})
 	target_compile_definitions (sssp PUBLIC -DDISABLE_CAIRO)
 endif ()
-target_link_libraries (sssp PUBLIC boost tbb)
+target_link_libraries (sssp PUBLIC boost)
 if (NOT ${DISABLE_CAIRO})
 	target_link_libraries (sssp PUBLIC cairomm)
 endif ()
@@ -127,8 +117,18 @@ target_include_directories (sssp INTERFACE .)
 
 # sssp-simulation executable
 ############################
-add_executable (sssp-simulation main.cpp)
+add_executable (sssp-simulation main_simulation.cpp)
 target_link_libraries (sssp-simulation PRIVATE sssp)
+
+# sssp-worker executable
+########################
+add_executable (sssp-worker main_worker.cpp)
+target_link_libraries (sssp-worker PRIVATE sssp)
+
+# sssp-batch executable
+#######################
+add_executable (sssp-batch main_batch.cpp)
+target_link_libraries (sssp-batch PRIVATE sssp Threads::Threads)
 
 # tests executable
 ##################

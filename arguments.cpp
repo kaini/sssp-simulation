@@ -8,7 +8,7 @@ extern const std::string sssp::arguments_csv_header(
     "position_alg,position_poisson_min_distance,position_poisson_max_reject,position_uniform_count,"
     "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,"
     "cost_alg,"
-    "alg");
+    "alg,seed");
 
 template <typename T> static std::string na_if(bool na, const T& value) {
     if (na) {
@@ -49,12 +49,13 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     out << na_if(args.edge_gen.algorithm != edge_algorithm::layered, args.edge_gen.layered.probability) << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::layered, args.edge_gen.layered.count) << ",";
     out << args.cost_gen.algorithm << ",";
-    out << args.algorithms;
+    out << args.algorithms << ",";
+    out << args.seed;
 
     return out.str();
 }
 
-boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
+boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* const* argv, std::ostream* error_output) {
     namespace po = boost::program_options;
 
     arguments args;
@@ -117,8 +118,6 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
             "  - oracle: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.\n"
             "  - heuristic: \tUses a heuristic to decide which nodes can be relaxed. The graph has to be euclidean.\n"
             "  - traff: \tLike Crauser et al. IN dynamic critiera but with an additional static lookahead.")
-        ("runs,r", po::value(&args.runs)->default_value(args.runs),
-            "Set the number of runs. (> 0)")
 #ifndef DISABLE_CAIRO
         ("image,i", po::value(&args.image)->default_value(""),
             "If set to a filename, output an image (PDF-file) displaying the graph and visualizing the algorithm.")
@@ -135,18 +134,24 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
         po::store(po::parse_command_line(argc, argv, all_opts), vm);
         po::notify(vm);
     } catch (const boost::program_options::error& ex) {
-        std::cerr << ex.what() << "\n";
+        if (error_output) {
+            *error_output << ex.what() << "\n";
+        }
         return {};
     }
 
     if (vm.count("help")) {
-        std::cout << all_opts << "\n";
+        if (error_output) {
+            *error_output << all_opts << "\n";
+        }
         return {};
     }
 
     if (std::find(args.algorithms.begin(), args.algorithms.end(), sssp_algorithm::heuristic) != args.algorithms.end() &&
         args.cost_gen.algorithm != cost_algorithm::euclidean) {
-        std::cerr << "`-a heuristic` cannot be used without `-C euclidean`.\n";
+        if (error_output) {
+            *error_output << "`-a heuristic` cannot be used without `-C euclidean`.\n";
+        }
         return {};
     }
 
@@ -154,4 +159,15 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, char* argv[]) {
     args.algorithms = std::vector<sssp_algorithm>(algorithms_set.begin(), algorithms_set.end());
 
     return args;
+}
+
+boost::optional<sssp::arguments>
+sssp::parse_arguments(const char* argv0, const std::vector<std::string>& raw_args, std::ostream* error_output) {
+    std::vector<const char*> argv;
+    argv.reserve(raw_args.size() + 1);
+    argv.push_back(argv0);
+    for (const std::string& arg : raw_args) {
+        argv.push_back(arg.c_str());
+    }
+    return parse_arguments(static_cast<int>(argv.size()), argv.data(), error_output);
 }

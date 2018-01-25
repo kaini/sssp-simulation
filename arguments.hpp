@@ -110,7 +110,6 @@ struct arguments {
 
     int seed = 42;
     std::vector<sssp_algorithm> algorithms = {sssp_algorithm::dijkstra};
-    positive_int runs = 1;
 #ifndef DISABLE_CAIRO
     std::string image = "";
 #endif
@@ -119,6 +118,8 @@ struct arguments {
 extern const std::string arguments_csv_header;
 std::string arguments_csv_values(const arguments& args);
 
-boost::optional<arguments> parse_arguments(int argc, char* argv[]);
+boost::optional<arguments> parse_arguments(int argc, const char* const* argv, std::ostream* error_output);
+boost::optional<arguments>
+parse_arguments(const char* argv0, const std::vector<std::string>& raw_args, std::ostream* error_output);
 
 } // namespace sssp
