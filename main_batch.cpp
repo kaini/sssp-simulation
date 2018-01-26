@@ -141,6 +141,8 @@ static int master_main(const std::string& basename) {
             // if I can't wait for a process it is already dead for some reason
         }
     }
+
+    std::cerr << "Hint: Use `cat " << basename << ".*` to concatenate all output files.\n";
     return EXIT_SUCCESS;
 }
 
