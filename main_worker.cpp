@@ -21,9 +21,7 @@ int main(int argc, char* argv[]) {
             auto opt_args = sssp::parse_arguments(argv[0], raw_args, nullptr);
             if (opt_args) {
                 auto args = *opt_args;
-                auto result = sssp::execute_run(args);
-                std::cout << sssp::arguments_csv_values(args) << "," << sssp::dijkstra_result_csv_values(result.result)
-                          << "\n";
+                sssp::execute_run(args, &std::cout, &std::cerr);
             } else {
                 std::cerr << "The job `" << job << "` is errornous, ignored!\n";
             }

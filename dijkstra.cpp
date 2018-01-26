@@ -3,23 +3,6 @@
 #include <limits>
 #include <vector>
 
-const std::string sssp::dijkstra_result_csv_header("node_count,reachable,relaxation_phases");
-
-std::ostream& sssp::operator<<(std::ostream& out, const sssp::dijkstra_result_csv_values& line) {
-    out << line.node_count << "," << line.reachable << "," << line.relaxation_phases;
-    return out;
-}
-
-sssp::dijkstra_result_csv_values::dijkstra_result_csv_values(const node_map<dijkstra_result>& result)
-    : node_count(result.size()),
-      reachable(std::count_if(result.begin(), result.end(), [](const auto& n) { return n.distance < INFINITY; })),
-      relaxation_phases(
-          std::max_element(result.begin(),
-                           result.end(),
-                           [](const auto& a, const auto& b) { return a.relaxation_phase < b.relaxation_phase; })
-              ->relaxation_phase +
-          1) {}
-
 sssp::node_map<sssp::dijkstra_result>
 sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<criteria>& criteria) {
     node_map<dijkstra_result> info = graph.make_node_map([](size_t i) { return dijkstra_result(); });

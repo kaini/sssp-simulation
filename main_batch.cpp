@@ -1,5 +1,5 @@
 #include "arguments.hpp"
-#include "dijkstra.hpp"
+#include "run.hpp"
 #include <boost/asio.hpp>
 #include <boost/assert.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -120,6 +120,12 @@ static void stdin_thread(const std::vector<std::unique_ptr<worker>>& workers, as
 }
 
 int main(int argc, char* argv[]) {
+    if (argc > 1) {
+        std::cerr << "This tool does not take arguments.\n";
+        std::cerr << "Pass each job as one line to the standard input as if you would call the simulation tool.\n";
+        return EXIT_FAILURE;
+    }
+
     asio::io_service ios;
 
     std::vector<boost::filesystem::path> paths;

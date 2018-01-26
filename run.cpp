@@ -10,7 +10,14 @@
 #include "math.hpp"
 #include <random>
 
-sssp::run_result sssp::execute_run(const arguments& args) {
+#ifndef DISABLE_CAIRO
+#include "draw_graph.hpp"
+#include <cairomm/cairomm.h>
+#endif
+
+const std::string sssp::dijkstra_result_csv_header("node_count,phase,relaxed");
+
+void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* err) {
     std::mt19937_64 rng(args.seed);
     std::uniform_int_distribution<int> uniform_seed(INT_MIN, INT_MAX);
     int position_seed = uniform_seed(rng);
@@ -109,7 +116,68 @@ sssp::run_result sssp::execute_run(const arguments& args) {
         }
     }
 
-    auto result = dijkstra(graph, start_node, criteria);
+    node_map<dijkstra_result> result = dijkstra(graph, start_node, criteria);
 
-    return run_result(std::move(graph), std::move(positions), std::move(result));
+    size_t reachable = 0;
+    int max_phase = 0;
+    std::vector<size_t> relaxed(graph.node_count(), 0);
+    for (const auto& r : result) {
+        if (r.settled()) {
+            reachable += 1;
+            max_phase = std::max(max_phase, r.relaxation_phase);
+            relaxed[r.relaxation_phase] += 1;
+        }
+    }
+
+    if (out) {
+        for (int phase = 0; phase <= max_phase; ++phase) {
+            *out << arguments_csv_values(args) << "," << graph.node_count() << "," << phase << "," << relaxed[phase]
+                 << "\n";
+        }
+    }
+
+#ifndef DISABLE_CAIRO
+    if (args.image.size() > 0) {
+        node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
+            node_style style;
+            style.position = positions[i];
+            if (result[i].relaxation_phase == -1) {
+                style.color = rgb(1.0, 0.5, 0.5);
+            } else {
+                double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_phase;
+                style.color = rgb(c, c, 1.0);
+                style.text = std::to_string(result[i].relaxation_phase);
+            }
+            return style;
+        });
+
+        edge_map<edge_style> edge_styles = graph.make_edge_map([&](size_t source, size_t destination) {
+            edge_style style;
+            if (result[destination].predecessor == source) {
+                style.line_width *= 2;
+                style.color = rgb(0.25, 0.25, 1.0);
+                style.foreground = true;
+            }
+            return style;
+        });
+
+        try {
+            int width = 800;
+            int height = 800;
+            auto surface = Cairo::PdfSurface::create(args.image, width, height);
+            auto cr = Cairo::Context::create(surface);
+            cr->translate(25, 25);
+            cr->scale(width - 50, height - 50);
+            cr->save();
+            cr->set_source_rgb(1.0, 1.0, 1.0);
+            cr->paint();
+            cr->restore();
+            draw_graph(cr, graph, node_styles, edge_styles);
+        } catch (const std::ios_base::failure& ex) {
+            if (err) {
+                *err << "Could not write file " << args.image << ": " << ex.what() << "\n";
+            }
+        }
+    }
+#endif
 }
