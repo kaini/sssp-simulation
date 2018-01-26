@@ -14,7 +14,7 @@ set (CMAKE_CXX_STANDARD 14)
 # TODO With cmake 3.10+ this if can be removed.
 if (MSVC)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++${CMAKE_CXX_STANDARD}")
-	add_definitions (-D_USE_MATH_DEFINES -D_WIN32_WINNT=0x0A00 -D_SCL_SECURE_NO_WARNINGS)
+	add_definitions (-D_USE_MATH_DEFINES -D_WIN32_WINNT=0x0A00 -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
 # Find external libraries
@@ -59,6 +59,9 @@ target_link_libraries (boost INTERFACE ${Boost_LIBRARIES})
 target_compile_definitions (boost INTERFACE -DBOOST_TEST_DYN_LINK)
 if (MSVC)
 	target_compile_definitions (boost INTERFACE -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
+endif ()
+if (UNIX)
+	target_link_libraries (boost INTERFACE rt)
 endif ()
 
 # sssp-simulation library
@@ -113,11 +116,6 @@ target_include_directories (sssp INTERFACE .)
 ############################
 add_executable (sssp-simulation main_simulation.cpp)
 target_link_libraries (sssp-simulation PRIVATE sssp)
-
-# sssp-worker executable
-########################
-add_executable (sssp-worker main_worker.cpp)
-target_link_libraries (sssp-worker PRIVATE sssp)
 
 # sssp-batch executable
 #######################

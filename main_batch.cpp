@@ -1,175 +1,175 @@
 #include "arguments.hpp"
 #include "run.hpp"
-#include <boost/asio.hpp>
 #include <boost/assert.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/process.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <functional>
+#include <iomanip>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 #include <thread>
 
+namespace bi = boost::interprocess;
 namespace bp = boost::process;
-namespace asio = boost::asio;
 using boost::system::error_code;
 
 namespace {
 
-class worker_error : public std::runtime_error {
-  public:
-    worker_error() : std::runtime_error("A worker aborted.") {}
+static constexpr size_t job_size = 1024;
+
+enum class message_type {
+    quit,
+    job,
 };
 
-struct worker {
-    worker(const boost::filesystem::path& binary, asio::io_service& ios)
-        : m_stdin(ios), m_stdout(ios),
-          m_child(binary, (bp::std_in < m_stdin), (bp::std_out > m_stdout), (bp::std_err > stderr)) {
-        recv_loop();
-    }
+struct message {
+    message_type type;
+    union {
+        char job[job_size];
+    } payload;
+};
 
-    void post_job(std::shared_ptr<std::string> job) {
-        BOOST_ASSERT(!m_done);
-        m_jobs.push_back(job);
-        if (!m_running) {
-            send_loop();
-        }
-    }
-
-    void post_done() {
-        BOOST_ASSERT(!m_done);
-        m_done = true;
-        if (!m_running) {
-            send_loop();
-        }
-    }
-
-    void join() { m_child.join(); }
-
-  private:
-    void send_loop() {
-        if (m_jobs.empty()) {
-            m_running = false;
-            if (m_done) {
-                m_stdin.async_close();
+struct remove_queue {
+    ~remove_queue() {
+        try {
+            if (bi::message_queue::remove("sssp-batch-mq")) {
+                std::cerr << "Deleted shared memory.\n";
             }
-        } else {
-            m_running = true;
-            auto job = m_jobs.back();
-            m_jobs.pop_back();
-            // Note: job has to be kept alive via the lambda!
-            asio::async_write(m_stdin, asio::buffer(*job), [this, job](error_code ec, size_t size) {
-                if (ec) {
-                    std::cerr << "ERROR: Could not dispatch job `" << *job << "`: " << ec << "\n";
-                    throw worker_error();
-                }
-                // Fetch the next job
-                send_loop();
-            });
+        } catch (...) {
         }
     }
-
-    void recv_loop() {
-        asio::async_read_until(m_stdout, m_read_buffer, '\n', [this](error_code ec, size_t size) {
-            if (ec == asio::error::eof) {
-                // do nothing
-            } else if (ec) {
-                std::cerr << "ERROR: Could not read from worker: " << ec << "\n";
-                throw worker_error();
-            } else {
-                std::istream is(&m_read_buffer);
-                std::string line;
-                std::getline(is, line);
-                std::cout << line << "\n";
-                recv_loop();
-            }
-        });
-    }
-
-    std::vector<std::shared_ptr<std::string>> m_jobs;
-    bool m_done = false;
-    bool m_running = false;
-    asio::streambuf m_read_buffer;
-    bp::async_pipe m_stdin;
-    bp::async_pipe m_stdout;
-    bp::child m_child;
 };
 
 } // namespace
 
-// Note: This is a thread and *must not* access anything carelessly.
-// Therefore this does only minimal (read only) work and dispatches
-// everything to ios.post, which runs on the main thread -> no issues there.
-static void stdin_thread(const std::vector<std::unique_ptr<worker>>& workers, asio::io_service& ios) {
-    size_t at = 0;
-    do {
-        auto job = std::make_shared<std::string>();
-        std::getline(std::cin, *job);
-        *job += "\n";
-        if (std::cin.good()) {
-            ios.post(std::bind(&worker::post_job, workers[at].get(), job));
-            at = (at + 1) % workers.size();
-        }
-    } while (std::cin.good());
+static int worker_main() {
+    bi::message_queue queue(bi::open_only, "sssp-batch-mq");
+    remove_queue remove_queue;
 
-    for (const auto& w : workers) {
-        ios.post(std::bind(&worker::post_done, w.get()));
+    message msg;
+    unsigned int msg_priority = 0;
+    bi::message_queue::size_type msg_size = 0;
+    while (true) {
+        queue.receive(&msg, sizeof(msg), msg_size, msg_priority);
+        BOOST_ASSERT(msg_size == sizeof(msg));
+        if (msg.type == message_type::quit) {
+            break;
+        } else if (msg.type == message_type::job) {
+            auto raw_args = boost::program_options::split_unix(msg.payload.job);
+            auto opt_args = sssp::parse_arguments("", raw_args, nullptr);
+            if (opt_args) {
+                auto args = *opt_args;
+                sssp::execute_run(args, &std::cout, &std::cerr);
+            } else {
+                std::cerr << "The job `" << msg.payload.job << "` is errornous, ignored!\n";
+            }
+        } else {
+            BOOST_ASSERT(false);
+        }
     }
+
+    return EXIT_SUCCESS;
 }
 
-int main(int argc, char* argv[]) {
-    if (argc > 1) {
-        std::cerr << "This tool does not take arguments.\n";
-        std::cerr << "Pass each job as one line to the standard input as if you would call the simulation tool.\n";
-        return EXIT_FAILURE;
-    }
+static int master_main(const std::string& basename) {
+    int worker_count = std::thread::hardware_concurrency();
 
-    asio::io_service ios;
-
-    std::vector<boost::filesystem::path> paths;
     error_code ec;
-    auto pl = boost::dll::program_location(ec);
-    if (!ec) {
-        paths.push_back(pl.remove_filename());
-    }
-    paths.push_back(".");
-    boost::filesystem::path binary = bp::search_path("sssp-worker", paths);
-    if (binary.empty()) {
-        std::cerr << "ERROR: Could not find the sssp-worker executable.\n";
+    auto self_exe = boost::dll::program_location(ec);
+    if (ec) {
+        std::cerr << "Could not find the own executable.\n";
         return EXIT_FAILURE;
     }
 
-    unsigned int worker_count = std::thread::hardware_concurrency();
+    bi::message_queue queue(bi::create_only, "sssp-batch-mq", worker_count * 100, sizeof(message));
+    remove_queue remove_queue;
+
     std::cerr << "Starting " << worker_count << " workers ...\n";
-    std::vector<std::unique_ptr<worker>> workers(worker_count);
-    for (unsigned int i = 0; i < worker_count; ++i) {
+    std::vector<bp::child> workers;
+    for (int i = 0; i < worker_count; ++i) {
         try {
-            workers[i] = std::make_unique<worker>(binary, ios);
+            std::ostringstream output_file;
+            output_file << basename << "." << std::setw(4) << std::setfill('0') << (i + 1);
+            workers.emplace_back(self_exe,
+                                 (bp::args = {"worker"}),
+                                 (bp::std_in < bp::close),
+                                 (bp::std_out > output_file.str()),
+                                 (bp::std_err > stderr));
         } catch (const bp::process_error& ex) {
-            std::cerr << "Could not start sssp-worker: " << ex.what() << "\n";
+            std::cerr << "Could not start a worker: " << ex.what() << "\n";
             return EXIT_FAILURE;
         }
     }
 
+    std::ostringstream header_file;
+    header_file << basename << "." << std::setw(4) << std::setfill('0') << 0;
+    std::ofstream header_file_fp(header_file.str());
+    header_file_fp << sssp::arguments_csv_header << "," << sssp::dijkstra_result_csv_header << "\n";
+    header_file_fp.close();
+
     std::cerr << "Ready for input ...\n";
-    auto now = boost::posix_time::second_clock::local_time();
-    std::cout << "# " << now << "\n";
-    std::cout << sssp::arguments_csv_header << "," << sssp::dijkstra_result_csv_header << "\n";
-
-    std::thread stdin_thread(&::stdin_thread, std::ref(workers), std::ref(ios));
-    try {
-        ios.run();
-    } catch (const worker_error&) {
-        std::cerr << "Aborting ...\n";
-        return EXIT_FAILURE;
+    std::string job;
+    message msg;
+    do {
+        std::getline(std::cin, job);
+        if (std::cin.good()) {
+            msg.type = message_type::job;
+            strncpy(msg.payload.job, job.c_str(), sizeof(msg.payload.job));
+            queue.send(&msg, sizeof(msg), 0);
+        }
+    } while (std::cin.good());
+    if (!std::cin.eof()) {
+        std::cerr << "Standard input read error.\n";
+    } else {
+        std::cerr << "All jobs dispatched.\n";
     }
 
-    std::cerr << "Quitting ...\n";
-    for (const auto& w : workers) {
-        w->join();
+    std::cerr << "Waiting for workers ...\n";
+    msg.type = message_type::quit;
+    for (int i = 0; i < worker_count; ++i) {
+        queue.send(&msg, sizeof(msg), 0);
     }
-    stdin_thread.join();
+    for (auto& worker : workers) {
+        try {
+            worker.wait();
+        } catch (const bp::process_error&) {
+            // if I can't wait for a process it is already dead for some reason
+        }
+    }
     return EXIT_SUCCESS;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc == 2 && strcmp(argv[1], "worker") == 0) {
+        return worker_main();
+    } else if (argc == 2 && strcmp(argv[1], "cleanup") == 0) {
+        remove_queue remove_queue;
+        return EXIT_SUCCESS;
+    } else {
+        if (argc != 2) {
+            std::cerr << "Usage: " << argv[0] << " OUTPUT_FILENAME\n\n";
+            std::cerr << "Pass each job as one line to the standard input as if you would call the simulation tool.\n";
+            std::cerr << "For each worker a file called OUPUT_FILENAME.0000 with 0000 being the worker number will be "
+                         "created. An additional file with the CSV header will be created as well.\n";
+            return EXIT_FAILURE;
+        }
+        try {
+            std::cerr
+                << "WARNING: When you cancel the program (e.g. by pressing CTRL+C) or it crashes you have to call `"
+                << argv[0] << " cleanup` to free the shared memory!\n";
+            std::cerr << "Hint: Use CTRL+D to send EOF to the standard input, this gracefully closes the program.\n";
+            return master_main(argv[1]);
+        } catch (const bi::interprocess_exception& ex) {
+            std::cerr << "Could not communicate with other processes: " << ex.what() << "\n";
+            std::cerr << "This most likely means that the shared memory was not cleaned up or you have wrong "
+                         "permissions. Try calling `"
+                      << argv[0] << " cleanup`.\n";
+            return EXIT_FAILURE;
+        }
+    }
 }
