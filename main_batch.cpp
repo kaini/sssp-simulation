@@ -3,6 +3,7 @@
 #include <boost/asio.hpp>
 #include <boost/assert.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process.hpp>
 #include <cstdlib>
 #include <functional>
@@ -121,7 +122,14 @@ static void stdin_thread(const std::vector<std::unique_ptr<worker>>& workers, as
 int main(int argc, char* argv[]) {
     asio::io_service ios;
 
-    boost::filesystem::path binary = bp::search_path("sssp-worker", {"."});
+    std::vector<boost::filesystem::path> paths;
+    error_code ec;
+    auto pl = boost::dll::program_location(ec);
+    if (!ec) {
+        paths.push_back(pl.remove_filename());
+    }
+    paths.push_back(".");
+    boost::filesystem::path binary = bp::search_path("sssp-worker", paths);
     if (binary.empty()) {
         std::cerr << "ERROR: Could not find the sssp-worker executable.\n";
         return EXIT_FAILURE;

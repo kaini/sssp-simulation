@@ -5,8 +5,8 @@
 #include <unordered_set>
 
 sssp::heuristic::heuristic(const sssp::graph* graph, size_t start_node, const relaxation_heuristic& heuristic)
-    : criteria(graph, start_node), m_heuristic(heuristic), m_safe_to_relax(m_pool),
-      m_node_info(graph->make_node_map([&](size_t node) { return node_info(*graph, heuristic, node, m_pool); })) {
+    : criteria(graph, start_node), m_heuristic(heuristic),
+      m_node_info(graph->make_node_map([&](size_t node) { return node_info(*graph, heuristic, node); })) {
 
     node_info& start = m_node_info[start_node];
     if (start.unsettled_predecessors.empty() ||
@@ -46,11 +46,8 @@ void sssp::heuristic::relaxed_node(size_t node) {
     }
 }
 
-sssp::heuristic::node_info::node_info(const sssp::graph& graph,
-                                      const relaxation_heuristic& h,
-                                      size_t index,
-                                      const local_linear_allocator<pred_info>& pool)
-    : index(index), unsettled_predecessors(pool) {
+sssp::heuristic::node_info::node_info(const sssp::graph& graph, const relaxation_heuristic& h, size_t index)
+    : index(index) {
     for (const auto& incoming_edge : graph.incoming_edges(index)) {
         unsettled_predecessors.emplace_back(incoming_edge.source, h(incoming_edge.source) + incoming_edge.cost);
     }

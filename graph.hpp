@@ -1,5 +1,4 @@
 #pragma once
-#include "linear_allocator.hpp"
 #include <boost/functional/hash.hpp>
 #include <cstdint>
 #include <deque>
@@ -64,9 +63,9 @@ class graph {
     size_t node_count() const;
 
     // Returns all outgoing edges of a node.
-    const std::deque<edge_info, local_linear_allocator<edge_info>>& outgoing_edges(size_t source) const;
+    const std::vector<edge_info>& outgoing_edges(size_t source) const;
     // Returns all incoming edges of a node.
-    const std::deque<edge_info, local_linear_allocator<edge_info>>& incoming_edges(size_t destination) const;
+    const std::vector<edge_info>& incoming_edges(size_t destination) const;
 
     // Creates a pre-filled node map by calling the callback.
     template <typename Fun> auto make_node_map(const Fun&& fn) const -> node_map<decltype(fn(0))> {
@@ -92,13 +91,11 @@ class graph {
 
   private:
     struct node {
-        node(const local_linear_allocator<edge_info>& alloc) : incoming(alloc), outgoing(alloc) {}
-        std::deque<edge_info, local_linear_allocator<edge_info>> incoming;
-        std::deque<edge_info, local_linear_allocator<edge_info>> outgoing;
+        std::vector<edge_info> incoming;
+        std::vector<edge_info> outgoing;
     };
 
-    local_linear_allocator<char> m_pool;
-    std::deque<node, local_linear_allocator<node>> m_nodes;
+    std::vector<node> m_nodes;
     size_t m_edge_count = 0;
 };
 

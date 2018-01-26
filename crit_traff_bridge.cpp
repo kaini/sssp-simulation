@@ -1,8 +1,7 @@
 #include "crit_traff_bridge.hpp"
 
 sssp::traff_bridge::traff_bridge(const sssp::graph* graph, size_t start_node)
-    : criteria(graph, start_node),
-      m_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n, m_pool); })) {}
+    : criteria(graph, start_node), m_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })) {}
 
 void sssp::traff_bridge::relaxable_nodes(todo_output& output) const {
     if (!m_distance_queue.empty()) {
@@ -46,10 +45,7 @@ void sssp::traff_bridge::relaxed_node(size_t node) {
     }
 }
 
-sssp::traff_bridge::node_info::node_info(const sssp::graph& graph,
-                                         size_t index,
-                                         const local_linear_allocator<pred_info>& pool)
-    : index(index), predecessors(pool) {
+sssp::traff_bridge::node_info::node_info(const sssp::graph& graph, size_t index) : index(index) {
     for (const auto& incoming_edge : graph.incoming_edges(index)) {
         double cost = INFINITY;
         for (const auto& pred_incoming_edge : graph.incoming_edges(incoming_edge.source)) {

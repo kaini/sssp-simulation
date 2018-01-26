@@ -1,6 +1,5 @@
 #pragma once
 #include "criteria.hpp"
-#include "linear_allocator.hpp"
 #include <boost/heap/pairing_heap.hpp>
 
 namespace sssp {
@@ -19,9 +18,7 @@ class smallest_tentative_distance : public criteria {
         bool operator()(const node_info* a, const node_info* b) const;
     };
 
-    using queue = boost::heap::pairing_heap<node_info*,
-                                            boost::heap::compare<node_info_compare>,
-                                            boost::heap::allocator<local_linear_allocator<node_info*>>>;
+    using queue = boost::heap::pairing_heap<node_info*, boost::heap::compare<node_info_compare>>;
 
     struct node_info {
         node_info(size_t index) : index(index) {}

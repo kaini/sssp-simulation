@@ -2,8 +2,8 @@
 #include <boost/assert.hpp>
 
 sssp::crauser_in::crauser_in(const sssp::graph* graph, size_t start_node, bool dynamic)
-    : criteria(graph, start_node),
-      m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n, m_pool); })), m_dynamic(dynamic) {}
+    : criteria(graph, start_node), m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })),
+      m_dynamic(dynamic) {}
 
 void sssp::crauser_in::relaxable_nodes(todo_output& output) const {
     if (!m_distance_queue.empty()) {
@@ -59,10 +59,8 @@ bool sssp::crauser_in::node_info_compare_threshold::operator()(const node_info* 
     return a->threshold() > b->threshold();
 }
 
-sssp::crauser_in::node_info::node_info(const sssp::graph& g,
-                                       size_t index,
-                                       const local_linear_allocator<edge_info>& pool)
-    : index(index), incoming(g.incoming_edges(index).begin(), g.incoming_edges(index).end(), pool) {
+sssp::crauser_in::node_info::node_info(const sssp::graph& g, size_t index)
+    : index(index), incoming(g.incoming_edges(index).begin(), g.incoming_edges(index).end()) {
     std::sort(incoming.begin(), incoming.end(), [](const auto& a, const auto& b) { return a.cost > b.cost; });
 }
 
@@ -75,8 +73,8 @@ double sssp::crauser_in::node_info::threshold() const {
 }
 
 sssp::crauser_out::crauser_out(const sssp::graph* graph, size_t start_node, bool dynamic)
-    : criteria(graph, start_node),
-      m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n, m_pool); })), m_dynamic(dynamic) {}
+    : criteria(graph, start_node), m_node_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })),
+      m_dynamic(dynamic) {}
 
 void sssp::crauser_out::relaxable_nodes(todo_output& output) const {
     if (!m_distance_queue.empty()) {
@@ -132,10 +130,8 @@ bool sssp::crauser_out::node_info_compare_threshold::operator()(const node_info*
     return a->threshold() > b->threshold();
 }
 
-sssp::crauser_out::node_info::node_info(const sssp::graph& g,
-                                        size_t index,
-                                        const local_linear_allocator<edge_info>& pool)
-    : index(index), outgoing(g.outgoing_edges(index).begin(), g.outgoing_edges(index).end(), pool) {
+sssp::crauser_out::node_info::node_info(const sssp::graph& g, size_t index)
+    : index(index), outgoing(g.outgoing_edges(index).begin(), g.outgoing_edges(index).end()) {
     std::sort(outgoing.begin(), outgoing.end(), [](const auto& a, const auto& b) { return a.cost > b.cost; });
 }
 

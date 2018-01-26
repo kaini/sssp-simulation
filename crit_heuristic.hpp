@@ -1,6 +1,5 @@
 #pragma once
 #include "criteria.hpp"
-#include "linear_allocator.hpp"
 #include <boost/heap/pairing_heap.hpp>
 #include <functional>
 #include <unordered_set>
@@ -26,20 +25,15 @@ class heuristic : public criteria {
     };
 
     struct node_info {
-        node_info(const sssp::graph& graph,
-                  const relaxation_heuristic& h,
-                  size_t index,
-                  const local_linear_allocator<pred_info>& pool);
+        node_info(const sssp::graph& graph, const relaxation_heuristic& h, size_t index);
         size_t index;
-        std::vector<pred_info, local_linear_allocator<pred_info>> unsettled_predecessors;
+        std::vector<pred_info> unsettled_predecessors;
         double tentative_distance = INFINITY;
         bool settled = false;
     };
 
-    local_linear_allocator<char> m_pool;
     relaxation_heuristic m_heuristic;
-    std::unordered_set<size_t, std::hash<size_t>, std::equal_to<size_t>, local_linear_allocator<size_t>>
-        m_safe_to_relax;
+    std::unordered_set<size_t, std::hash<size_t>, std::equal_to<size_t>> m_safe_to_relax;
     node_map<node_info> m_node_info;
 };
 

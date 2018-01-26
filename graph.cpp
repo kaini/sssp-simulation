@@ -2,11 +2,11 @@
 #include <algorithm>
 #include <boost/assert.hpp>
 
-sssp::graph::graph() : m_pool(default_chunk_size), m_nodes(m_pool) {}
+sssp::graph::graph() {}
 
 size_t sssp::graph::add_node() {
     size_t index = m_nodes.size();
-    m_nodes.push_back(node(m_pool));
+    m_nodes.emplace_back();
     return index;
 }
 
@@ -30,12 +30,10 @@ size_t sssp::graph::node_count() const {
     return m_nodes.size();
 }
 
-const std::deque<sssp::edge_info, sssp::local_linear_allocator<sssp::edge_info>>&
-sssp::graph::outgoing_edges(size_t source) const {
+const std::vector<sssp::edge_info>& sssp::graph::outgoing_edges(size_t source) const {
     return m_nodes[source].outgoing;
 }
 
-const std::deque<sssp::edge_info, sssp::local_linear_allocator<sssp::edge_info>>&
-sssp::graph::incoming_edges(size_t destination) const {
+const std::vector<sssp::edge_info>& sssp::graph::incoming_edges(size_t destination) const {
     return m_nodes[destination].incoming;
 }
