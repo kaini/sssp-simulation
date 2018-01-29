@@ -60,7 +60,7 @@ target_compile_definitions (boost INTERFACE -DBOOST_TEST_DYN_LINK)
 if (MSVC)
 	target_compile_definitions (boost INTERFACE -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 endif ()
-if (UNIX)
+if (UNIX AND NOT APPLE)
 	target_link_libraries (boost INTERFACE rt)
 endif ()
 
