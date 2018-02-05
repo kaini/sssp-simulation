@@ -108,6 +108,7 @@ struct arguments {
         cost_algorithm algorithm = cost_algorithm::uniform;
     } cost_gen;
 
+    std::string graph_file = "";
     int seed = 42;
     std::vector<sssp_algorithm> algorithms = {sssp_algorithm::dijkstra};
 #ifndef DISABLE_CAIRO

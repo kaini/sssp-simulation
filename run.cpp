@@ -8,6 +8,8 @@
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
 #include "math.hpp"
+#include <boost/algorithm/string.hpp>
+#include <fstream>
 #include <random>
 
 #ifndef DISABLE_CAIRO
@@ -15,73 +17,139 @@
 #include <cairomm/cairomm.h>
 #endif
 
+using namespace boost::algorithm;
+
 const std::string sssp::dijkstra_result_csv_header("node_count,phase,relaxed");
 
 void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* err) {
-    std::mt19937_64 rng(args.seed);
-    std::uniform_int_distribution<int> uniform_seed(INT_MIN, INT_MAX);
-    int position_seed = uniform_seed(rng);
-    int cost_seed = uniform_seed(rng);
-    int edge_seed = uniform_seed(rng);
-
-    node_map<vec2> positions;
-    switch (args.position_gen.algorithm) {
-        case position_algorithm::poisson:
-            positions = generate_poisson_disc_positions(
-                position_seed, args.position_gen.poisson.min_distance, args.position_gen.poisson.max_reject);
-            break;
-        case position_algorithm::uniform:
-            positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
-            break;
-        default:
-            BOOST_ASSERT(false);
-            break;
-    }
-
-    graph graph;
-    for (size_t i = 0; i < positions.size(); ++i) {
-        graph.add_node();
-    }
-
-    edge_cost_fn edge_cost_fn;
-    switch (args.cost_gen.algorithm) {
-        case cost_algorithm::uniform:
-            edge_cost_fn = [rng = std::mt19937(cost_seed)](const line& line) mutable {
-                return std::uniform_real_distribution<double>(0.0, 1.0)(rng);
-            };
-            break;
-        case cost_algorithm::one:
-            edge_cost_fn = [](const line& line) { return 1.0; };
-            break;
-        case cost_algorithm::euclidean:
-            edge_cost_fn = [](const line& line) { return distance(line.start, line.end); };
-            break;
-        default:
-            BOOST_ASSERT(false);
-            break;
-    }
-
-    switch (args.edge_gen.algorithm) {
-        case edge_algorithm::planar:
-            generate_planar_edges(edge_seed, args.edge_gen.planar.probability, edge_cost_fn, graph, positions);
-            break;
-        case edge_algorithm::uniform:
-            generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);
-            break;
-        case edge_algorithm::layered:
-            generate_layered_edges(edge_seed,
-                                   args.edge_gen.layered.probability,
-                                   args.edge_gen.layered.count,
-                                   edge_cost_fn,
-                                   graph,
-                                   positions);
-            break;
-        default:
-            BOOST_ASSERT(false);
-            break;
-    }
-
     size_t start_node = 0;
+    node_map<vec2> positions;
+    graph graph;
+
+    if (args.graph_file.empty()) {
+        std::mt19937_64 rng(args.seed);
+        std::uniform_int_distribution<int> uniform_seed(INT_MIN, INT_MAX);
+        int position_seed = uniform_seed(rng);
+        int cost_seed = uniform_seed(rng);
+        int edge_seed = uniform_seed(rng);
+
+        switch (args.position_gen.algorithm) {
+            case position_algorithm::poisson:
+                positions = generate_poisson_disc_positions(
+                    position_seed, args.position_gen.poisson.min_distance, args.position_gen.poisson.max_reject);
+                break;
+            case position_algorithm::uniform:
+                positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
+                break;
+            default:
+                BOOST_ASSERT(false);
+                break;
+        }
+
+        for (size_t i = 0; i < positions.size(); ++i) {
+            graph.add_node();
+        }
+
+        edge_cost_fn edge_cost_fn;
+        switch (args.cost_gen.algorithm) {
+            case cost_algorithm::uniform:
+                edge_cost_fn = [rng = std::mt19937(cost_seed)](const line& line) mutable {
+                    return std::uniform_real_distribution<double>(0.0, 1.0)(rng);
+                };
+                break;
+            case cost_algorithm::one:
+                edge_cost_fn = [](const line& line) { return 1.0; };
+                break;
+            case cost_algorithm::euclidean:
+                edge_cost_fn = [](const line& line) { return distance(line.start, line.end); };
+                break;
+            default:
+                BOOST_ASSERT(false);
+                break;
+        }
+
+        switch (args.edge_gen.algorithm) {
+            case edge_algorithm::planar:
+                generate_planar_edges(edge_seed, args.edge_gen.planar.probability, edge_cost_fn, graph, positions);
+                break;
+            case edge_algorithm::uniform:
+                generate_uniform_edges(edge_seed, args.edge_gen.uniform.probability, edge_cost_fn, graph, positions);
+                break;
+            case edge_algorithm::layered:
+                generate_layered_edges(edge_seed,
+                                       args.edge_gen.layered.probability,
+                                       args.edge_gen.layered.count,
+                                       edge_cost_fn,
+                                       graph,
+                                       positions);
+                break;
+            default:
+                BOOST_ASSERT(false);
+                break;
+        }
+    } else {
+        std::ifstream in(args.graph_file);
+        std::string line;
+        std::vector<std::string> columns;
+        std::set<std::tuple<std::string, std::string, double>> edges;
+        std::unordered_map<std::string, size_t> nodes;
+        size_t node_index = 0;
+        while (std::getline(in, line)) {
+            trim(line);
+            if (line.empty() || starts_with(line, "#") || starts_with(line, "//") || starts_with(line, "--")) {
+                continue;
+            }
+
+            columns.clear();
+            split(columns, line, std::isspace, token_compress_on);
+            if (columns.size() < 2) {
+                if (err) {
+                    (*err) << "Parse error in " << args.graph_file << "!\n";
+                }
+                return;
+            }
+
+            double cost = 1.0;
+            if (columns.size() >= 3) {
+                try {
+                    cost = boost::lexical_cast<double>(columns[2]);
+                } catch (const boost::bad_lexical_cast& ex) {
+                    if (err) {
+                        (*err) << "Parse error in " << args.graph_file << ": " << ex.what() << "\n";
+                    }
+                    return;
+                }
+            }
+
+            edges.emplace(columns[0], columns[1], cost);
+            if (nodes.find(columns[0]) == nodes.end()) {
+                nodes[columns[0]] = node_index;
+                node_index += 1;
+                graph.add_node();
+            }
+            if (nodes.find(columns[1]) == nodes.end()) {
+                nodes[columns[1]] = node_index;
+                node_index += 1;
+                graph.add_node();
+            }
+        }
+        if (!in.eof()) {
+            if (err) {
+                (*err) << "Read error: " << args.graph_file << "\n";
+            }
+            return;
+        }
+
+        if (graph.node_count() == 0) {
+            return; // nothing to do ...
+        }
+
+        for (const auto& edge : edges) {
+            graph.add_edge(nodes[std::get<0>(edge)], nodes[std::get<1>(edge)], std::get<double>(edge));
+        }
+        positions = graph.make_node_map([](size_t) { return vec2(0.0, 0.0); });
+    }
+
     boost::base_collection<criteria> criteria;
     for (sssp_algorithm crit : args.algorithms) {
         switch (crit) {

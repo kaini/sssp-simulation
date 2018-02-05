@@ -1,4 +1,5 @@
 #include "arguments.hpp"
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <set>
@@ -8,6 +9,7 @@ extern const std::string sssp::arguments_csv_header(
     "position_alg,position_poisson_min_distance,position_poisson_max_reject,position_uniform_count,"
     "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,"
     "cost_alg,"
+    "graph_file,"
     "alg,seed");
 
 template <typename T> static std::string na_if(bool na, const T& value) {
@@ -36,21 +38,31 @@ std::ostream& sssp::operator<<(std::ostream& out, const std::vector<sssp_algorit
 std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     using namespace sssp;
 
+    bool graph_file = !args.graph_file.empty();
+
     std::ostringstream out;
-    out << args.position_gen.algorithm << ",";
-    out << na_if(args.position_gen.algorithm != position_algorithm::poisson, args.position_gen.poisson.min_distance)
+    out << na_if(graph_file, args.position_gen.algorithm) << ",";
+    out << na_if(args.position_gen.algorithm != position_algorithm::poisson || graph_file,
+                 args.position_gen.poisson.min_distance)
         << ",";
-    out << na_if(args.position_gen.algorithm != position_algorithm::poisson, args.position_gen.poisson.max_reject)
+    out << na_if(args.position_gen.algorithm != position_algorithm::poisson || graph_file,
+                 args.position_gen.poisson.max_reject)
         << ",";
-    out << na_if(args.position_gen.algorithm != position_algorithm::uniform, args.position_gen.uniform.count) << ",";
-    out << args.edge_gen.algorithm << ",";
-    out << na_if(args.edge_gen.algorithm != edge_algorithm::planar, args.edge_gen.planar.probability) << ",";
-    out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform, args.edge_gen.uniform.probability) << ",";
-    out << na_if(args.edge_gen.algorithm != edge_algorithm::layered, args.edge_gen.layered.probability) << ",";
-    out << na_if(args.edge_gen.algorithm != edge_algorithm::layered, args.edge_gen.layered.count) << ",";
-    out << args.cost_gen.algorithm << ",";
+    out << na_if(args.position_gen.algorithm != position_algorithm::uniform || graph_file,
+                 args.position_gen.uniform.count)
+        << ",";
+    out << na_if(graph_file, args.edge_gen.algorithm) << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::planar || graph_file, args.edge_gen.planar.probability)
+        << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::uniform || graph_file, args.edge_gen.uniform.probability)
+        << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::layered || graph_file, args.edge_gen.layered.probability)
+        << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::layered || graph_file, args.edge_gen.layered.count) << ",";
+    out << na_if(graph_file, args.cost_gen.algorithm) << ",";
+    out << na_if(!graph_file, boost::filesystem::path(args.graph_file).filename().string()) << ",";
     out << args.algorithms << ",";
-    out << args.seed;
+    out << na_if(graph_file, args.seed);
 
     return out.str();
 }
@@ -106,6 +118,8 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
     all_opts.add_options()
         ("help,h",
             "Show this help message.")
+        ("graph-file,g", po::value(&args.graph_file)->default_value(args.graph_file),
+            "Load a graph from a textfile with the line-format `source destination cost`, with cost being optional. Position, edge and cost generation choices are ignored if this option is supplied.")
         ("seed,s", po::value(&args.seed)->default_value(args.seed),
             "Set the seed.")
         ("algorithm,a", po::value<std::vector<sssp_algorithm>>(&args.algorithms)->composing()->default_value(args.algorithms),
