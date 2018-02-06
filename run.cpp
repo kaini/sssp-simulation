@@ -9,6 +9,7 @@
 #include "generate_positions.hpp"
 #include "math.hpp"
 #include <boost/algorithm/string.hpp>
+#include <cctype>
 #include <fstream>
 #include <random>
 
@@ -101,7 +102,7 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
             }
 
             columns.clear();
-            split(columns, line, std::isspace, token_compress_on);
+            split(columns, line, [](char c) { return std::isspace(static_cast<int>(c)); }, token_compress_on);
             if (columns.size() < 2) {
                 if (err) {
                     (*err) << "Parse error in " << args.graph_file << "!\n";
