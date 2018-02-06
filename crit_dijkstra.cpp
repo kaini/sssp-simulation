@@ -5,7 +5,7 @@ sssp::smallest_tentative_distance::smallest_tentative_distance(const sssp::graph
 
 void sssp::smallest_tentative_distance::relaxable_nodes(todo_output& output) const {
     if (!m_queue.empty()) {
-        output.push_back(m_queue.top()->index);
+        output.emplace(m_queue.top()->index);
     }
 }
 

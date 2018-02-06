@@ -12,7 +12,7 @@ void sssp::crauser_in::relaxable_nodes(todo_output& output) const {
         auto iter = m_threshold_queue.ordered_begin();
         auto end = m_threshold_queue.ordered_end();
         while (iter != end && (*iter)->threshold() <= m) {
-            output.push_back((*iter)->index);
+            output.emplace((*iter)->index);
             ++iter;
         }
     }
@@ -83,7 +83,7 @@ void sssp::crauser_out::relaxable_nodes(todo_output& output) const {
         auto iter = m_distance_queue.ordered_begin();
         auto end = m_distance_queue.ordered_end();
         while (iter != end && (*iter)->tentative_distance <= l) {
-            output.push_back((*iter)->index);
+            output.emplace((*iter)->index);
             ++iter;
         }
     }

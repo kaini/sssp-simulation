@@ -12,7 +12,7 @@ sssp::oracle::oracle(const sssp::graph* graph, size_t start_node) : criteria(gra
 void sssp::oracle::relaxable_nodes(todo_output& output) const {
     for (const auto& node : m_fringe) {
         if (std::abs(m_result[node.first].distance - node.second) <= DBL_EPSILON) {
-            output.push_back(node.first);
+            output.emplace(node.first);
         }
     }
 }

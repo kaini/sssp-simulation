@@ -12,6 +12,7 @@ class traff_bridge : public criteria {
     virtual void relaxable_nodes(todo_output& output) const override;
     virtual void changed_predecessor(size_t node, size_t predecessor, double distance) override;
     virtual void relaxed_node(size_t node) override;
+    virtual bool is_complete() const override { return false; }
 
   private:
     struct node_info;

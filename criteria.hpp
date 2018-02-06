@@ -1,12 +1,12 @@
 #pragma once
 #include "graph.hpp"
-#include <vector>
+#include <unordered_set>
 
 namespace sssp {
 
 class criteria {
   public:
-    using todo_output = std::vector<size_t>;
+    using todo_output = std::unordered_set<size_t>;
 
     criteria(const graph* graph, size_t start_node) : m_graph(graph), m_start_node(start_node) {}
 
@@ -24,6 +24,9 @@ class criteria {
     // for nodes not returned by relaxable_nodes. Called after the appropriate
     // changed_predecessor calls.
     virtual void relaxed_node(size_t node) = 0;
+
+    // Return true if the criteria alone is complete.
+    virtual bool is_complete() const = 0;
 
   protected:
     const sssp::graph& graph() const { return *m_graph; }

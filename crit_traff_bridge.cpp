@@ -1,4 +1,5 @@
 #include "crit_traff_bridge.hpp"
+#include <cfloat>
 
 sssp::traff_bridge::traff_bridge(const sssp::graph* graph, size_t start_node)
     : criteria(graph, start_node), m_info(graph->make_node_map([&](size_t n) { return node_info(*graph, n); })) {}
@@ -10,7 +11,16 @@ void sssp::traff_bridge::relaxable_nodes(todo_output& output) const {
         auto iter = m_threshold_queue.ordered_begin();
         auto end = m_threshold_queue.ordered_end();
         while (iter != end && (*iter)->threshold() <= t) {
-            output.push_back((*iter)->index);
+            bool has_pred_in_fringe = false;
+            for (const auto& pred : (*iter)->predecessors) {
+                if (m_info[pred.pred].tentative != INFINITY && !m_info[pred.pred].settled) {
+                    has_pred_in_fringe = true;
+                    break;
+                }
+            }
+            if (!has_pred_in_fringe) {
+                output.emplace((*iter)->index);
+            }
             ++iter;
         }
     }
