@@ -11,14 +11,7 @@ void sssp::traff_bridge::relaxable_nodes(todo_output& output) const {
         auto iter = m_threshold_queue.ordered_begin();
         auto end = m_threshold_queue.ordered_end();
         while (iter != end && (*iter)->threshold() <= t) {
-            bool has_pred_in_fringe = false;
-            for (const auto& pred : (*iter)->predecessors) {
-                if (m_info[pred.pred].tentative != INFINITY && !m_info[pred.pred].settled) {
-                    has_pred_in_fringe = true;
-                    break;
-                }
-            }
-            if (!has_pred_in_fringe) {
+            if ((*iter)->fringe_predecessors == 0) {
                 output.emplace((*iter)->index);
             }
             ++iter;
@@ -33,6 +26,9 @@ void sssp::traff_bridge::changed_predecessor(size_t node, size_t predecessor, do
     if (info.distance_queue_handle == distance_queue::handle_type()) {
         info.distance_queue_handle = m_distance_queue.push(&info);
         info.threshold_queue_handle = m_threshold_queue.push(&info);
+        for (const auto& outgoing_edge : graph().outgoing_edges(node)) {
+            m_info[outgoing_edge.destination].fringe_predecessors += 1;
+        }
     } else {
         m_distance_queue.update(info.distance_queue_handle);
         m_threshold_queue.update(info.threshold_queue_handle);
@@ -51,6 +47,8 @@ void sssp::traff_bridge::relaxed_node(size_t node) {
             while (!succ.predecessors.empty() && m_info[succ.predecessors.back().pred].settled) {
                 succ.predecessors.pop_back();
             }
+            succ.fringe_predecessors -= 1;
+            BOOST_ASSERT(succ.fringe_predecessors != size_t(-1));
         }
     }
 }

@@ -41,6 +41,7 @@ class traff_bridge : public criteria {
         double tentative = INFINITY;
         bool settled = false;
         std::vector<pred_info> predecessors;
+        size_t fringe_predecessors = 0;
         distance_queue::handle_type distance_queue_handle;
         threshold_queue::handle_type threshold_queue_handle;
 
