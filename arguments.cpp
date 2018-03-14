@@ -5,12 +5,14 @@
 #include <set>
 #include <sstream>
 
+// clang-format off
 extern const std::string sssp::arguments_csv_header(
     "position_alg,position_poisson_min_distance,position_poisson_max_reject,position_uniform_count,"
-    "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,"
+    "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,edge_kronecker_initiator_size,edge_kronecker_k,"
     "cost_alg,"
     "graph_file,"
     "alg,seed");
+// clang-format on
 
 template <typename T> static std::string na_if(bool na, const T& value) {
     if (na) {
@@ -39,16 +41,17 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     using namespace sssp;
 
     bool graph_file = !args.graph_file.empty();
+    bool kronecker = args.edge_gen.algorithm == edge_algorithm::kronecker;
 
     std::ostringstream out;
-    out << na_if(graph_file, args.position_gen.algorithm) << ",";
-    out << na_if(args.position_gen.algorithm != position_algorithm::poisson || graph_file,
+    out << na_if(graph_file || kronecker, args.position_gen.algorithm) << ",";
+    out << na_if(args.position_gen.algorithm != position_algorithm::poisson || graph_file || kronecker,
                  args.position_gen.poisson.min_distance)
         << ",";
-    out << na_if(args.position_gen.algorithm != position_algorithm::poisson || graph_file,
+    out << na_if(args.position_gen.algorithm != position_algorithm::poisson || graph_file || kronecker,
                  args.position_gen.poisson.max_reject)
         << ",";
-    out << na_if(args.position_gen.algorithm != position_algorithm::uniform || graph_file,
+    out << na_if(args.position_gen.algorithm != position_algorithm::uniform || graph_file || kronecker,
                  args.position_gen.uniform.count)
         << ",";
     out << na_if(graph_file, args.edge_gen.algorithm) << ",";
@@ -59,6 +62,10 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     out << na_if(args.edge_gen.algorithm != edge_algorithm::layered || graph_file, args.edge_gen.layered.probability)
         << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::layered || graph_file, args.edge_gen.layered.count) << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::kronecker || graph_file,
+                 args.edge_gen.kronecker.initiator_size)
+        << ",";
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::kronecker || graph_file, args.edge_gen.kronecker.k) << ",";
     out << na_if(graph_file, args.cost_gen.algorithm) << ",";
     out << na_if(!graph_file, boost::filesystem::path(args.graph_file).filename().string()) << ",";
     out << args.algorithms << ",";
@@ -94,7 +101,8 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
             "Set the generator used to generate edges. Possible values:\n"
             "  - planar: \tthe graph will be planar\n"
             "  - uniform: \trandom edges\n"
-            "  - layered: \tlayered graph (e.g. bipartite)")
+            "  - layered: \tlayered graph (e.g. bipartite)\n"
+            "  - kronecker: \tKronecker graphs as defined in Leskovec et al. 2010. If you choose Kronecker graphs, all options regarting the node positions are ignored.")
         ("Eplanar-probability", po::value(&args.edge_gen.planar.probability)->default_value(args.edge_gen.planar.probability),
             "Set the probability that a valid edge is added. (>= 0; <= 1)")
         ("Euniform-probability", po::value(&args.edge_gen.uniform.probability)->default_value(args.edge_gen.uniform.probability),
@@ -103,6 +111,10 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
             "Set the probability for each edge to be added. (>= 0; <= 1)")
         ("Elayered-count", po::value(&args.edge_gen.layered.count)->default_value(args.edge_gen.layered.count),
             "Set the number of layers. A value of 2 generates a bipartite graph. (> 0)")
+        ("Ekronecker-initiator-size", po::value(&args.edge_gen.kronecker.initiator_size)->default_value(args.edge_gen.kronecker.initiator_size),
+            "Set the dimension of the initiator matrix. (> 0)")
+        ("Ekronecker-k", po::value(&args.edge_gen.kronecker.k)->default_value(args.edge_gen.kronecker.k),
+            "Set the Kronecker power. The generated graph has at most initiator-size^k nodes. (> 0)")
         ;
 
     po::options_description cost_opts("Edge costs");

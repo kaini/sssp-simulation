@@ -34,21 +34,23 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
         int cost_seed = uniform_seed(rng);
         int edge_seed = uniform_seed(rng);
 
-        switch (args.position_gen.algorithm) {
-            case position_algorithm::poisson:
-                positions = generate_poisson_disc_positions(
-                    position_seed, args.position_gen.poisson.min_distance, args.position_gen.poisson.max_reject);
-                break;
-            case position_algorithm::uniform:
-                positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
-                break;
-            default:
-                BOOST_ASSERT(false);
-                break;
-        }
+        if (args.edge_gen.algorithm != edge_algorithm::kronecker) {
+            switch (args.position_gen.algorithm) {
+                case position_algorithm::poisson:
+                    positions = generate_poisson_disc_positions(
+                        position_seed, args.position_gen.poisson.min_distance, args.position_gen.poisson.max_reject);
+                    break;
+                case position_algorithm::uniform:
+                    positions = generate_uniform_positions(position_seed, args.position_gen.uniform.count);
+                    break;
+                default:
+                    BOOST_ASSERT(false);
+                    break;
+            }
 
-        for (size_t i = 0; i < positions.size(); ++i) {
-            graph.add_node();
+            for (size_t i = 0; i < positions.size(); ++i) {
+                graph.add_node();
+            }
         }
 
         edge_cost_fn edge_cost_fn;
@@ -83,6 +85,14 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
                                        edge_cost_fn,
                                        graph,
                                        positions);
+                break;
+            case edge_algorithm::kronecker:
+                generate_kronecker_graph(edge_seed,
+                                         args.edge_gen.kronecker.initiator_size,
+                                         args.edge_gen.kronecker.k,
+                                         edge_cost_fn,
+                                         graph,
+                                         positions);
                 break;
             default:
                 BOOST_ASSERT(false);
@@ -149,6 +159,11 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
             graph.add_edge(nodes[std::get<0>(edge)], nodes[std::get<1>(edge)], std::get<double>(edge));
         }
         positions = graph.make_node_map([](size_t) { return vec2(0.0, 0.0); });
+    }
+
+    if (graph.node_count() == 0) {
+        (*err) << "The generated graph is empty!\n";
+        return;
     }
 
     boost::base_collection<criteria> criteria;

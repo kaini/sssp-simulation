@@ -148,3 +148,73 @@ void sssp::generate_layered_edges(int seed,
         }
     }
 }
+
+void sssp::generate_kronecker_graph(int seed,
+                                    size_t start_size,
+                                    int k,
+                                    const edge_cost_fn& edge_cost,
+                                    graph& graph,
+                                    node_map<vec2>& positions) {
+    std::mt19937 rng(seed);
+
+    size_t final_size = 1;
+    for (int i = 0; i < k; ++i) {
+        final_size *= start_size;
+    }
+    positions.resize(final_size, vec2(0.0, 0.0));
+    for (size_t n = 0; n < final_size; ++n) {
+        graph.add_node();
+    }
+
+    std::vector<double> matrix(start_size * start_size);
+    auto p1 = [&](size_t x, size_t y) { return matrix[x + y * start_size]; };
+    std::uniform_real_distribution<double> uniform01(0.0, 1.0);
+    for (double& entry : matrix) {
+        entry = uniform01(rng);
+    }
+
+    std::vector<double> matrix_prefix_sum(start_size * start_size);
+    matrix_prefix_sum[0] = matrix[0];
+    for (int i = 1; i < matrix.size(); ++i) {
+        matrix_prefix_sum[i] = matrix_prefix_sum[i - 1] + matrix[i];
+    }
+
+    // The matrix can be interpret as parameters of a poisson binomial distribution
+    // The Kronecker product multiplies the expected values:
+    // Consider: M = [a b; c d] and M' = [a' b'; c' d'].
+    // The Kronecker product leads to [aM' bM'; cM' dM'], therefore the new sum is
+    // sum(aM') + sum(bM') + sum(cM') + sum(dM') = (a + b + c + d) * sum(M') = sum(M) * sum(M').
+    double edges_expected_value = std::pow(matrix_prefix_sum.back(), k);
+    // Now the poisson bionmial distribution can be apprximated well by a poisson distribution if
+    // the probabilites are very low (this is given here due to the nature of potentiation of lots of
+    // probabilities).
+    size_t edges = std::poisson_distribution<size_t>(edges_expected_value)(rng);
+
+    std::uniform_real_distribution<double> cell_dist(0.0, matrix_prefix_sum.back());
+    std::unordered_set<size_t> used_cells;
+    for (size_t e = 0; e < edges; ++e) {
+        // Sample the cell for the edge
+        size_t cell = 0;
+        size_t granularity = 1;
+        for (int i = 0; i < k; ++i) {
+            double value = cell_dist(rng);
+            size_t index = std::distance(matrix_prefix_sum.begin(),
+                                         std::lower_bound(matrix_prefix_sum.begin(), matrix_prefix_sum.end(), value));
+            if (index == matrix_prefix_sum.size()) {
+                // This should not happen, but could happen due to double inaccuracies
+                index = matrix_prefix_sum.size() - 1;
+            }
+            cell += index * granularity;
+            granularity *= start_size * start_size;
+        }
+        size_t u = cell / final_size;
+        size_t v = cell % final_size;
+        if (u == v || used_cells.find(cell) != used_cells.end()) {
+            // Try again
+            e -= 1;
+            continue;
+        }
+        used_cells.insert(cell);
+        graph.add_edge(u, v, edge_cost(line(vec2(0.0, 0.0), vec2(0.0, 0.0))));
+    }
+}

@@ -32,4 +32,14 @@ void generate_layered_edges(int seed,
                             graph& graph,
                             const node_map<vec2>& positions);
 
+// Creates a Kronecker graph. Different to the other functions, this function also creates the nodes
+// in the graph and fills the positions node_map with all zeros. Note that this implements
+// the stochastic version of the algorithm.
+void generate_kronecker_graph(int seed,
+                              size_t start_size,
+                              int k,
+                              const edge_cost_fn& edge_cost,
+                              graph& graph,
+                              node_map<vec2>& positions);
+
 } // namespace sssp
