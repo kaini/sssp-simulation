@@ -189,6 +189,8 @@ void sssp::generate_kronecker_graph(int seed,
     // the probabilites are very low (this is given here due to the nature of potentiation of lots of
     // probabilities).
     size_t edges = std::poisson_distribution<size_t>(edges_expected_value)(rng);
+    // Realistically this edge case can only happen with very low node counts.
+    edges = std::min(edges, final_size);
 
     std::uniform_real_distribution<double> cell_dist(0.0, matrix_prefix_sum.back());
     std::unordered_set<size_t> used_cells;
