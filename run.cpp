@@ -1,4 +1,3 @@
-#include "run.hpp"
 #include "crit_crauser.hpp"
 #include "crit_dijkstra.hpp"
 #include "crit_heuristic.hpp"
@@ -8,6 +7,7 @@
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
 #include "math.hpp"
+#include "run.hpp"
 #include <boost/algorithm/string.hpp>
 #include <cctype>
 #include <fstream>
@@ -88,7 +88,7 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
                 break;
             case edge_algorithm::kronecker:
                 generate_kronecker_graph(edge_seed,
-                                         args.edge_gen.kronecker.initiator_size,
+                                         args.edge_gen.kronecker.initiator,
                                          args.edge_gen.kronecker.k,
                                          edge_cost_fn,
                                          graph,

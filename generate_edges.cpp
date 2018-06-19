@@ -150,30 +150,30 @@ void sssp::generate_layered_edges(int seed,
 }
 
 void sssp::generate_kronecker_graph(int seed,
-                                    size_t start_size,
+                                    std::vector<double> matrix,
                                     int k,
                                     const edge_cost_fn& edge_cost,
                                     graph& graph,
                                     node_map<vec2>& positions) {
     std::mt19937 rng(seed);
 
+    size_t start_size = 1;
+    while (start_size * start_size != matrix.size()) {
+        BOOST_ASSERT(start_size * start_size < matrix.size());
+        start_size += 1;
+    }
+
     size_t final_size = 1;
     for (int i = 0; i < k; ++i) {
         final_size *= start_size;
     }
+
     positions.resize(final_size, vec2(0.0, 0.0));
     for (size_t n = 0; n < final_size; ++n) {
         graph.add_node();
     }
 
-    std::vector<double> matrix(start_size * start_size);
-    auto p1 = [&](size_t x, size_t y) { return matrix[x + y * start_size]; };
-    std::uniform_real_distribution<double> uniform01(0.0, 1.0);
-    for (double& entry : matrix) {
-        entry = uniform01(rng);
-    }
-
-    std::vector<double> matrix_prefix_sum(start_size * start_size);
+    std::vector<double> matrix_prefix_sum(matrix.size());
     matrix_prefix_sum[0] = matrix[0];
     for (int i = 1; i < matrix.size(); ++i) {
         matrix_prefix_sum[i] = matrix_prefix_sum[i - 1] + matrix[i];

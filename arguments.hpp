@@ -23,6 +23,7 @@ STRINGY_ENUM(sssp_algorithm,
              traff)
 
 std::ostream& operator<<(std::ostream& out, const std::vector<sssp_algorithm>& algorithms);
+std::ostream& operator<<(std::ostream& out, const std::vector<double>& vector);
 
 template <typename T> using valid_fn = bool (*)(const T&);
 template <typename T> using default_fn = T (*)();
@@ -103,7 +104,7 @@ struct arguments {
             positive_int count = 2;
         } layered;
         struct kronecker {
-            positive_int initiator_size = 10;
+            std::vector<double> initiator = {0.57, 0.19, 0.19, 0.05};
             positive_int k = 3;
         } kronecker;
     } edge_gen;

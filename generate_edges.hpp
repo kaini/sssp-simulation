@@ -36,7 +36,7 @@ void generate_layered_edges(int seed,
 // in the graph and fills the positions node_map with all zeros. Note that this implements
 // the stochastic version of the algorithm.
 void generate_kronecker_graph(int seed,
-                              size_t start_size,
+                              std::vector<double> matrix,
                               int k,
                               const edge_cost_fn& edge_cost,
                               graph& graph,

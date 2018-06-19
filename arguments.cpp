@@ -1,4 +1,5 @@
 #include "arguments.hpp"
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -8,12 +9,13 @@
 // clang-format off
 extern const std::string sssp::arguments_csv_header(
     "position_alg,position_poisson_min_distance,position_poisson_max_reject,position_uniform_count,"
-    "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,edge_kronecker_initiator_size,edge_kronecker_k,"
+    "edge_alg,edge_planar_probability,edge_uniform_probability,edge_layered_probability,edge_layered_count,edge_kronecker_initiator,edge_kronecker_k,"
     "cost_alg,"
     "graph_file,"
     "alg,seed");
 // clang-format on
 
+namespace sssp { // thanks ADL!
 template <typename T> static std::string na_if(bool na, const T& value) {
     if (na) {
         return "NA";
@@ -23,6 +25,7 @@ template <typename T> static std::string na_if(bool na, const T& value) {
         return out.str();
     }
 }
+} // namespace sssp
 
 std::ostream& sssp::operator<<(std::ostream& out, const std::vector<sssp_algorithm>& algorithms) {
     bool first = true;
@@ -33,6 +36,19 @@ std::ostream& sssp::operator<<(std::ostream& out, const std::vector<sssp_algorit
             first = false;
         }
         out << algorithm;
+    }
+    return out;
+}
+
+std::ostream& sssp::operator<<(std::ostream& out, const std::vector<double>& vector) {
+    bool first = true;
+    for (const auto& value : vector) {
+        if (!first) {
+            out << ";";
+        } else {
+            first = false;
+        }
+        out << value;
     }
     return out;
 }
@@ -62,8 +78,7 @@ std::string sssp::arguments_csv_values(const sssp::arguments& args) {
     out << na_if(args.edge_gen.algorithm != edge_algorithm::layered || graph_file, args.edge_gen.layered.probability)
         << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::layered || graph_file, args.edge_gen.layered.count) << ",";
-    out << na_if(args.edge_gen.algorithm != edge_algorithm::kronecker || graph_file,
-                 args.edge_gen.kronecker.initiator_size)
+    out << na_if(args.edge_gen.algorithm != edge_algorithm::kronecker || graph_file, args.edge_gen.kronecker.initiator)
         << ",";
     out << na_if(args.edge_gen.algorithm != edge_algorithm::kronecker || graph_file, args.edge_gen.kronecker.k) << ",";
     out << na_if(graph_file, args.cost_gen.algorithm) << ",";
@@ -78,6 +93,10 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
     namespace po = boost::program_options;
 
     arguments args;
+
+    std::ostringstream oss;
+    oss << args.edge_gen.kronecker.initiator;
+    std::string kronecker_initiator(oss.str());
 
     // clang-format off
 
@@ -111,8 +130,8 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
             "Set the probability for each edge to be added. (>= 0; <= 1)")
         ("Elayered-count", po::value(&args.edge_gen.layered.count)->default_value(args.edge_gen.layered.count),
             "Set the number of layers. A value of 2 generates a bipartite graph. (> 0)")
-        ("Ekronecker-initiator-size", po::value(&args.edge_gen.kronecker.initiator_size)->default_value(args.edge_gen.kronecker.initiator_size),
-            "Set the dimension of the initiator matrix. (> 0)")
+        ("Ekronecker-initiator", po::value(&kronecker_initiator)->default_value(kronecker_initiator),
+            "Set the initiator matrix. (square size and each entry >= 0; <= 1)")
         ("Ekronecker-k", po::value(&args.edge_gen.kronecker.k)->default_value(args.edge_gen.kronecker.k),
             "Set the Kronecker power. The generated graph has at most initiator-size^k nodes. (> 0)")
         ;
@@ -183,6 +202,40 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
 
     std::set<sssp_algorithm> algorithms_set(args.algorithms.begin(), args.algorithms.end());
     args.algorithms = std::vector<sssp_algorithm>(algorithms_set.begin(), algorithms_set.end());
+
+    args.edge_gen.kronecker.initiator.clear();
+    std::vector<std::string> split_kronecker_initiator;
+    boost::split(split_kronecker_initiator,
+                 kronecker_initiator,
+                 [](char c) { return c == ';'; },
+                 boost::algorithm::token_compress_on);
+    for (const auto& cell : split_kronecker_initiator) {
+        try {
+            double value = boost::lexical_cast<double>(cell);
+            if (value < 0 || value > 1) {
+                if (error_output) {
+                    *error_output << "entries in `--Ekronecker-initiator` must be between 0 and 1.\n";
+                }
+                return {};
+            }
+            args.edge_gen.kronecker.initiator.push_back(value);
+        } catch (boost::bad_lexical_cast&) {
+            if (error_output) {
+                *error_output << "invalid matrix passed to `--Ekronecker-initiator`: cannot parse number.\n";
+            }
+            return {};
+        }
+    }
+    size_t i = 1;
+    while (i * i != args.edge_gen.kronecker.initiator.size()) {
+        if (i * i > args.edge_gen.kronecker.initiator.size()) {
+            if (error_output) {
+                *error_output << "matrix passed to `--Ekronecker-initiator` must be square.\n";
+            }
+            return {};
+        }
+        i += 1;
+    }
 
     return args;
 }
