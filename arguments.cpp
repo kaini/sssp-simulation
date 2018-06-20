@@ -131,7 +131,7 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
         ("Elayered-count", po::value(&args.edge_gen.layered.count)->default_value(args.edge_gen.layered.count),
             "Set the number of layers. A value of 2 generates a bipartite graph. (> 0)")
         ("Ekronecker-initiator", po::value(&kronecker_initiator)->default_value(kronecker_initiator),
-            "Set the initiator matrix. (square size and each entry >= 0; <= 1)")
+            "Set the initiator matrix. (square size and each entry > 0)")
         ("Ekronecker-k", po::value(&args.edge_gen.kronecker.k)->default_value(args.edge_gen.kronecker.k),
             "Set the Kronecker power. The generated graph has at most initiator-size^k nodes. (> 0)")
         ;
@@ -212,9 +212,9 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
     for (const auto& cell : split_kronecker_initiator) {
         try {
             double value = boost::lexical_cast<double>(cell);
-            if (value < 0 || value > 1) {
+            if (value <= 0) {
                 if (error_output) {
-                    *error_output << "entries in `--Ekronecker-initiator` must be between 0 and 1.\n";
+                    *error_output << "entries in `--Ekronecker-initiator` must be greater than 0.\n";
                 }
                 return {};
             }
