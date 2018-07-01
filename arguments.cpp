@@ -99,6 +99,22 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
     std::string kronecker_initiator(oss.str());
 
     // clang-format off
+	
+#ifndef DISABLE_CAIRO
+	po::options_description img_opts("Image output");
+	img_opts.add_options()
+        ("image,i", po::value(&args.image)->default_value(""),
+            "If set to a filename, output an image (PDF-file) displaying the graph and visualizing the algorithm.")
+		("image-node-colors", po::value(&args.image_node_colors)->default_value(args.image_node_colors),
+			"Color the nodes in the image output according to their phase and reachability.")
+		("image-node-labels", po::value(&args.image_node_labels)->default_value(args.image_node_labels),
+			"Display the phase number inside nodes.")
+		("image-edge-colors", po::value(&args.image_edge_colors)->default_value(args.image_edge_colors),
+			"Color the edges to show the shortest path tree.")
+		("image-edge-labels", po::value(&args.image_edge_labels)->default_value(args.image_edge_labels),
+			"Display the edge costs next to edges.")
+		;
+#endif
 
     po::options_description pos_opts("Node positions (note that all nodes are always in the area from 0/0 to 1/1)");
     pos_opts.add_options()
@@ -163,11 +179,10 @@ boost::optional<sssp::arguments> sssp::parse_arguments(int argc, const char* con
             "  - oracle: \tUses an oracle to relax all nodes that can be safely relaxed in any given phase.\n"
             "  - heuristic: \tUses a heuristic to decide which nodes can be relaxed. The graph has to be euclidean.\n"
             "  - traff: \tLike Crauser et al. IN dynamic critiera but with an additional static lookahead.")
-#ifndef DISABLE_CAIRO
-        ("image,i", po::value(&args.image)->default_value(""),
-            "If set to a filename, output an image (PDF-file) displaying the graph and visualizing the algorithm.")
-#endif
         ;
+#ifndef DISABLE_CAIRO
+	all_opts.add(img_opts);
+#endif
     all_opts.add(pos_opts);
     all_opts.add(edge_opts);
     all_opts.add(cost_opts);

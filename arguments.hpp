@@ -116,8 +116,13 @@ struct arguments {
     std::string graph_file = "";
     int seed = 42;
     std::vector<sssp_algorithm> algorithms = {sssp_algorithm::dijkstra};
+
 #ifndef DISABLE_CAIRO
     std::string image = "";
+    bool image_node_labels = true;
+    bool image_node_colors = true;
+    bool image_edge_labels = true;
+    bool image_edge_colors = true;
 #endif
 };
 

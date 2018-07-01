@@ -224,6 +224,7 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
     if (args.image.size() > 0) {
         node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
             node_style style;
+
             style.position = positions[i];
             if (result[i].relaxation_phase == -1) {
                 style.color = rgb(1.0, 0.5, 0.5);
@@ -232,16 +233,44 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
                 style.color = rgb(c, c, 1.0);
                 style.text = std::to_string(result[i].relaxation_phase);
             }
+
+            // Override values if disabled
+            if (!args.image_node_labels) {
+                style.text = "";
+            }
+            if (!args.image_node_colors) {
+                style.color = rgb(1.0, 1.0, 1.0);
+            }
+
             return style;
         });
 
         edge_map<edge_style> edge_styles = graph.make_edge_map([&](size_t source, size_t destination) {
             edge_style style;
+
+            for (const edge_info& edge : graph.outgoing_edges(source)) {
+                if (edge.destination == destination) {
+                    style.text = std::to_string(int(std::round(edge.cost * 1000))) + ">";
+                    break;
+                }
+            }
+
             if (result[destination].predecessor == source) {
                 style.line_width *= 2;
                 style.color = rgb(0.25, 0.25, 1.0);
                 style.foreground = true;
             }
+
+            // Override values if disabled
+            if (!args.image_edge_colors) {
+                style.color = rgb(0.0, 0.0, 0.0);
+                style.line_width = edge_style().line_width;
+                style.foreground = edge_style().foreground;
+            }
+            if (!args.image_edge_labels) {
+                style.text = "";
+            }
+
             return style;
         });
 

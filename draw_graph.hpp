@@ -15,6 +15,7 @@ struct edge_style {
     rgb color = rgb(0.5, 0.5, 0.5);
     double line_width = 0.002;
     bool foreground = false;
+    std::string text = "";
 };
 
 // Draws the graph in the image area from 0/0 to 1/1.
