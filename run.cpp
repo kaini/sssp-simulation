@@ -222,6 +222,18 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
 
 #ifndef DISABLE_CAIRO
     if (args.image.size() > 0) {
+        int layers = 1;
+        std::vector<size_t> count_by_layer(1, graph.node_count());
+        std::vector<size_t> placed_by_layer(1, 0);
+        if (args.edge_gen.algorithm == edge_algorithm::layered) {
+            layers = args.edge_gen.layered.count;
+            count_by_layer = std::vector<size_t>(layers, 0);
+            placed_by_layer = std::vector<size_t>(layers, 0);
+            for (size_t node = 0; node < graph.node_count(); ++node) {
+                count_by_layer[y_bucket(layers, positions[node].y)] += 1;
+            }
+        }
+
         node_map<node_style> node_styles = graph.make_node_map([&](size_t i) {
             node_style style;
 
@@ -240,6 +252,12 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
             }
             if (!args.image_node_colors) {
                 style.color = rgb(1.0, 1.0, 1.0);
+            }
+            if (args.edge_gen.algorithm == edge_algorithm::layered) {
+                int layer = y_bucket(layers, positions[i].y);
+                style.position.x = (1.0 / (count_by_layer[layer] + 1)) * (placed_by_layer[layer] + 1);
+                style.position.y = (1.0 / (layers + 1)) * (layer + 1);
+                placed_by_layer[layer] += 1;
             }
 
             return style;

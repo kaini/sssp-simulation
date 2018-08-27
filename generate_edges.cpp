@@ -110,7 +110,7 @@ void sssp::generate_planar_edges(int seed,
     }
 }
 
-static int y_bucket(int layers, double y) {
+int sssp::y_bucket(int layers, double y) {
     BOOST_ASSERT(layers >= 1);
     BOOST_ASSERT(0.0 <= y && y <= 1.0);
     // The std::min is just for the rare case that some y is exactly 1.
