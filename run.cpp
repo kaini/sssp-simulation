@@ -20,7 +20,7 @@
 
 using namespace boost::algorithm;
 
-const std::string sssp::dijkstra_result_csv_header("node_count,phase,relaxed");
+const std::string sssp::dijkstra_result_csv_header("node_count,phase,relaxed,fringe_size");
 
 void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* err) {
     size_t start_node = 0;
@@ -205,18 +205,20 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
     size_t reachable = 0;
     int max_phase = 0;
     std::vector<size_t> relaxed(graph.node_count(), 0);
+    std::vector<size_t> fringe_size(graph.node_count(), 0);
     for (const auto& r : result) {
         if (r.settled()) {
             reachable += 1;
             max_phase = std::max(max_phase, r.relaxation_phase);
             relaxed[r.relaxation_phase] += 1;
+            fringe_size[r.relaxation_phase] = std::max(fringe_size[r.relaxation_phase], r.fringe_size);
         }
     }
 
     if (out) {
         for (int phase = 0; phase <= max_phase; ++phase) {
             *out << arguments_csv_values(args) << "," << graph.node_count() << "," << phase << "," << relaxed[phase]
-                 << "\n";
+                 << "," << fringe_size[phase] << "\n";
         }
     }
 
@@ -241,7 +243,7 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
             if (result[i].relaxation_phase == -1) {
                 style.color = rgb(1.0, 0.5, 0.5);
             } else {
-                double c = 0.25 + 0.75 * static_cast<double>(result[i].relaxation_phase) / max_phase;
+                double c = std::min(1.0, std::pow(static_cast<double>(result[i].relaxation_phase) / 15, 1.0 / 2.2));
                 style.color = rgb(c, c, 1.0);
                 style.text = std::to_string(result[i].relaxation_phase);
             }

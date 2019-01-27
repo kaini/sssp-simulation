@@ -6,12 +6,14 @@ sssp::node_map<sssp::dijkstra_result>
 sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<criteria>& criteria) {
     node_map<dijkstra_result> info = graph.make_node_map([](size_t i) { return dijkstra_result(); });
     int current_phase = 0;
+    size_t fringe_size = 0;
 
     // Put the start node in the fringe set.
     info[start_node].distance = 0.0;
     for (auto& crit : criteria) {
         crit.changed_predecessor(start_node, size_t(-1), 0.0);
     }
+    fringe_size += 1;
 
     criteria::todo_output todo;
     todo.reserve(graph.node_count());
@@ -33,6 +35,9 @@ sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<cri
         // errors.
         for (size_t node : todo) {
             info[node].relaxation_phase = current_phase;
+            info[node].fringe_size = fringe_size;
+            fringe_size -= 1;
+            BOOST_ASSERT(fringe_size != size_t(-1));
         }
 
         // Relax each node.
@@ -43,6 +48,10 @@ sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<cri
             for (const edge_info& edge : graph.outgoing_edges(node)) {
                 dijkstra_result& destination_node = info[edge.destination];
                 if (!destination_node.settled() && current_node.distance + edge.cost < destination_node.distance) {
+                    if (destination_node.unexplored()) {
+                        fringe_size += 1;
+                        BOOST_ASSERT(fringe_size <= graph.node_count());
+                    }
                     destination_node.distance = current_node.distance + edge.cost;
                     destination_node.predecessor = node;
                     for (auto& crit : criteria) {
@@ -60,5 +69,6 @@ sssp::dijkstra(const graph& graph, size_t start_node, boost::base_collection<cri
         ++current_phase;
     }
 
+    BOOST_ASSERT(fringe_size == 0);
     return info;
 }

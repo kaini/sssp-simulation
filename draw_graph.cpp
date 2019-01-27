@@ -34,9 +34,8 @@ void sssp::draw_graph(const Cairo::RefPtr<Cairo::Context>& cr,
                       const graph& graph,
                       const node_map<node_style>& node_styles,
                       const edge_map<edge_style>& edge_styles) {
-    std::set<std::pair<size_t, size_t>> drawn_edge_lines;
-
     for (bool foreground : {false, true}) {
+        std::set<std::tuple<size_t, size_t>> drawn_edge_lines;
         for (size_t node = 0; node < graph.node_count(); ++node) {
             for (const edge_info& edge : graph.outgoing_edges(node)) {
 
