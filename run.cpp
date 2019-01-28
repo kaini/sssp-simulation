@@ -1,13 +1,15 @@
+#include "run.hpp"
 #include "crit_crauser.hpp"
 #include "crit_dijkstra.hpp"
 #include "crit_heuristic.hpp"
 #include "crit_oracle.hpp"
+#include "crit_paper_in.hpp"
+#include "crit_paper_out.hpp"
 #include "crit_traff_bridge.hpp"
 #include "dijkstra.hpp"
 #include "generate_edges.hpp"
 #include "generate_positions.hpp"
 #include "math.hpp"
-#include "run.hpp"
 #include <boost/algorithm/string.hpp>
 #include <cctype>
 #include <fstream>
@@ -193,6 +195,12 @@ void sssp::execute_run(const arguments& args, std::ostream* out, std::ostream* e
                 break;
             case sssp_algorithm::traff:
                 criteria.insert(traff_bridge(&graph, start_node));
+                break;
+            case sssp_algorithm::paper_in:
+                criteria.insert(paper_in(&graph, start_node));
+                break;
+            case sssp_algorithm::paper_out:
+                criteria.insert(paper_out(&graph, start_node));
                 break;
             default:
                 BOOST_ASSERT(false);

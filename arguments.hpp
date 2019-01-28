@@ -20,7 +20,9 @@ STRINGY_ENUM(sssp_algorithm,
              crauser_out_dyn,
              oracle,
              heuristic,
-             traff)
+             traff,
+             paper_in,
+             paper_out)
 
 std::ostream& operator<<(std::ostream& out, const std::vector<sssp_algorithm>& algorithms);
 std::ostream& operator<<(std::ostream& out, const std::vector<double>& vector);

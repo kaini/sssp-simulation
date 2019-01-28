@@ -3,6 +3,8 @@
 #include "crit_heuristic.hpp"
 #include "crit_oracle.hpp"
 #include "crit_traff_bridge.hpp"
+#include "crit_paper_in.hpp"
+#include "crit_paper_out.hpp"
 #include "graph.hpp"
 #include "test_graph.hpp"
 #include <boost/mpl/list.hpp>
@@ -33,7 +35,9 @@ struct crauser_out_dynamic : crauser_out {
 
 } // namespace
 
-using non_euclidean_tests = boost::mpl::list<traff_bridge,
+using non_euclidean_tests = boost::mpl::list<paper_out,
+                                             paper_in,
+                                             traff_bridge,
                                              crauser_out_static,
                                              crauser_out_dynamic,
                                              crauser_in_static,
