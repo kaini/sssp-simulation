@@ -71,6 +71,8 @@ set (HEADERS
 	crit_crauser.hpp
 	crit_dijkstra.hpp
 	crit_heuristic.hpp
+	crit_paper_in.hpp
+	crit_paper_out.hpp
 	crit_oracle.hpp
 	crit_traff_bridge.hpp
 	criteria.hpp
@@ -89,6 +91,8 @@ set (SOURCES
 	crit_crauser.cpp
 	crit_dijkstra.cpp
 	crit_heuristic.cpp
+	crit_paper_in.cpp
+	crit_paper_out.cpp
 	crit_oracle.cpp
 	crit_traff_bridge.cpp
 	dijkstra.cpp
